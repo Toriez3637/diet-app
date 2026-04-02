@@ -466,7 +466,7 @@
 <!-- ライトボックス -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <button class="lightbox-close" onclick="closeLightbox()">✕</button>
-  <img id="lightbox-img" src="" alt="">
+  <img id="lightbox-img" src="" alt="" onclick="event.stopPropagation()">
 </div>
 
 <div class="toast" id="toast"></div>
@@ -606,7 +606,7 @@ function renderToday(){
   if(!tl.length){listEl.innerHTML='<div class="empty-state">まだ記録がありません</div>';return;}
   listEl.innerHTML=tl.slice().reverse().map(l=>`
     <div class="log-entry">
-      ${l.thumb?`<img class="log-thumb" src="${l.thumb}" alt="" onclick="openImg('${l.id}')" style="cursor:zoom-in">`:`<div class="log-thumb-placeholder">${l.emoji}</div>`}
+      ${l.thumb?`<img class="log-thumb" src="${l.thumb}" alt="" onclick="openImg(${l.id})" style="cursor:pointer">`:`<div class="log-thumb-placeholder">${l.emoji}</div>`}
       <div class="log-info">
         <div class="log-meal">${l.emoji} ${l.meal}</div>
         <div class="log-items">${l.name}</div>
@@ -683,16 +683,24 @@ window.saveEdit=function(){
   save();syncFB();closeEditModal();renderToday();toast('✅ 編集しました');
 }
 // ライトボックス
-window.openImg=function(id){
-  const log=S.logs.find(l=>l.id===id);if(!log||!log.thumb)return;
-  g('lightbox-img').src=log.thumb;
-  g('lightbox').classList.add('show');
-}
-window.closeLightbox=function(){g('lightbox').classList.remove('show');}
-window.openImgSrc=function(src){
+function showLightbox(src){
   if(!src)return;
   g('lightbox-img').src=src;
   g('lightbox').classList.add('show');
+}
+window.openImg=function(id){
+  // IDは数値で渡される
+  const log=S.logs.find(l=>l.id===id);
+  if(!log||!log.thumb)return;
+  showLightbox(log.thumb);
+}
+window.openImgByIdx=function(idx){
+  const src=(window._lb||[])[idx];
+  if(src)showLightbox(src);
+}
+window.closeLightbox=function(){
+  g('lightbox').classList.remove('show');
+  g('lightbox-img').src='';
 }
 
 // ===== WALKING =====
@@ -784,6 +792,7 @@ function renderWalk(){
 
 // ===== TEAM =====
 function renderTeam(){
+  window._lb=[];// ライトボックス用画像配列リセット
   if(!S.db){
     g('team-no-firebase').style.display='block';
     g('team-connected').style.display='none';
@@ -820,7 +829,7 @@ function renderTeam(){
       ?m.todayLogs.map(l=>`
         <div class="team-food-log">
           ${l.thumb
-            ?`<img src="${l.thumb}" class="team-food-thumb" onclick="openImgSrc(this.src)" style="cursor:zoom-in">`
+            ?(()=>{window._lb=window._lb||[];const idx=window._lb.push(l.thumb)-1;return`<img src="${l.thumb}" class="team-food-thumb" onclick="openImgByIdx(${idx})" style="cursor:pointer">`;})()
             :`<div class="team-food-icon">${l.emoji||'🍽️'}</div>`}
           <div style="flex:1;min-width:0">
             <div style="font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l.emoji||''}${l.name||'記録あり'}</div>
