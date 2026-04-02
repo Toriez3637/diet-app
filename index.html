@@ -263,6 +263,10 @@
       <div><div class="setting-label">APIキー</div><div class="setting-sub">sk-ant-... から始まるキー</div></div>
       <input type="password" id="api-key-input" placeholder="sk-ant-..." style="width:150px">
     </div>
+    <div class="setting-row">
+      <div><div class="setting-label">プロキシURL</div><div class="setting-sub">Cloudflare WorkerのURL（スマホ対応に必要）</div></div>
+      <input type="text" id="proxy-url-input" placeholder="https://xxx.workers.dev" style="width:150px;text-align:left;font-size:.75rem">
+    </div>
     <button class="save-btn" onclick="saveApiKey()">🔑 保存</button>
     <button class="save-btn" style="margin-top:6px;background:#1565C0" onclick="testApiKey()">🔍 接続テスト</button>
     <div id="api-test-result" style="margin-top:8px;font-size:.82rem;text-align:center"></div>
@@ -316,16 +320,17 @@
 <div class="toast" id="toast"></div>
 
 <script type="module">
-const S={logs:[],goal:1600,userName:'',apiKey:'',roomCode:'',firebaseCfg:'',meal:'朝食',mealEmoji:'🌅',imgB64:null,pendingItems:[],db:null,teamData:{}};
+const S={logs:[],goal:1600,userName:'',apiKey:'',proxyUrl:'',roomCode:'',firebaseCfg:'',meal:'朝食',mealEmoji:'🌅',imgB64:null,pendingItems:[],db:null,teamData:{}};
 
 function load(){
   try{const s=JSON.parse(localStorage.getItem('diet_v2')||'{}');
     S.logs=s.logs||[];S.goal=s.goal||1600;S.userName=s.userName||'';
-    S.apiKey=s.apiKey||'';S.roomCode=s.roomCode||'';S.firebaseCfg=s.firebaseCfg||'';
+    S.apiKey=s.apiKey||'';S.proxyUrl=s.proxyUrl||'';S.roomCode=s.roomCode||'';S.firebaseCfg=s.firebaseCfg||'';
   }catch(e){}
   g('goal-kcal-input').value=S.goal;
   g('user-name-input').value=S.userName;
   g('api-key-input').value=S.apiKey;
+  g('proxy-url-input').value=S.proxyUrl;
   g('room-code-input').value=S.roomCode;
   g('firebase-cfg-input').value=S.firebaseCfg;
   if(!S.apiKey)g('api-notice').style.display='block';
@@ -402,15 +407,14 @@ window.analyzeImage=async function(){
     const parts=S.imgB64.split(',');
     const mime=parts[0].match(/:(.*?);/)[1];
     const b64=parts[1];
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    // プロキシURLがあればそちらを使う（スマホ対応）
+    const endpoint=S.proxyUrl?S.proxyUrl:'https://api.anthropic.com/v1/messages';
+    const headers={'Content-Type':'application/json','x-api-key':apiKey};
+    if(!S.proxyUrl){headers['anthropic-version']='2023-06-01';headers['anthropic-dangerous-direct-browser-calls']='true';}
+    const res=await fetch(endpoint,{
       method:'POST',
       mode:'cors',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key':apiKey,
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-calls':'true'
-      },
+      headers,
       body:JSON.stringify({
         model:'claude-haiku-4-5-20251001',
         max_tokens:1024,
@@ -654,6 +658,7 @@ window.saveProfile=function(){
 
 window.saveApiKey=function(){
   S.apiKey=g('api-key-input').value.trim();
+  S.proxyUrl=g('proxy-url-input').value.trim().replace(/\/$/,'');
   save();
   g('api-notice').style.display=S.apiKey?'none':'block';
   toast(S.apiKey?'🔑 APIキーを保存しました':'⚠️ クリアしました');
@@ -662,12 +667,16 @@ window.saveApiKey=function(){
 window.testApiKey=async function(){
   const apiKey=g('api-key-input').value.trim();
   if(!apiKey){toast('⚠️ まずAPIキーを入力してください');return;}
+  const proxyUrl=g('proxy-url-input').value.trim().replace(/\/$/,'');
   const el=g('api-test-result');
   el.textContent='🔄 テスト中...';el.style.color='var(--muted)';
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const endpoint=proxyUrl?proxyUrl:'https://api.anthropic.com/v1/messages';
+    const headers={'Content-Type':'application/json','x-api-key':apiKey};
+    if(!proxyUrl){headers['anthropic-version']='2023-06-01';headers['anthropic-dangerous-direct-browser-calls']='true';}
+    const res=await fetch(endpoint,{
       method:'POST',mode:'cors',
-      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-calls':'true'},
+      headers,
       body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:10,messages:[{role:'user',content:'hi'}]})
     });
     if(res.ok){
