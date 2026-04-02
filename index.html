@@ -188,11 +188,18 @@
   </div>
   <div class="card">
     <h2>📸 食事を記録</h2>
-    <div class="upload-area" onclick="document.getElementById('file-input').click()">
-      <input type="file" id="file-input" accept="image/*" onchange="handleFileSelect(event)">
-      <div class="icon">📷</div>
-      <strong>タップして撮影・写真を選択</strong>
-      <p>写真は任意です</p>
+    <!-- 隠しinput×2 -->
+    <input type="file" id="file-input-camera" accept="image/*" capture="environment" onchange="handleFileSelect(event)" style="display:none">
+    <input type="file" id="file-input-library" accept="image/*" onchange="handleFileSelect(event)" style="display:none">
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <button onclick="document.getElementById('file-input-camera').click()"
+        style="flex:1;padding:14px 8px;border:2px dashed var(--primary);border-radius:12px;background:#F9FBE7;cursor:pointer;font-size:.85rem;font-weight:700;color:var(--primary-dark)">
+        📷 撮影する
+      </button>
+      <button onclick="document.getElementById('file-input-library').click()"
+        style="flex:1;padding:14px 8px;border:2px dashed var(--muted);border-radius:12px;background:#fff;cursor:pointer;font-size:.85rem;font-weight:700;color:var(--text)">
+        🖼️ アルバムから選ぶ
+      </button>
     </div>
     <div id="preview-wrap"><img id="preview-img" src="" alt="プレビュー"></div>
   </div>
@@ -532,7 +539,7 @@ window.addManual=function(){
   save();syncFB();
   g('manual-name').value='';g('manual-kcal').value='';
   g('preview-wrap').style.display='none';
-  g('file-input').value='';S.imgB64=null;
+  g('file-input-camera').value='';g('file-input-library').value='';S.imgB64=null;
   toast(`✅ ${S.meal}を記録しました${kcal?`（${kcal} kcal）`:''}`);
 }
 
