@@ -93,10 +93,21 @@
     /* Team */
     .team-member{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
     .team-member:last-child{border-bottom:none}
+    .team-member-card{padding:12px 0;border-bottom:1px solid var(--border)}
+    .team-member-card:last-child{border-bottom:none}
     .team-avatar{width:40px;height:40px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;flex-shrink:0}
     .team-bar-mini{height:6px;background:#EEE;border-radius:99px;margin-top:3px;overflow:hidden}
     .team-bar-fill{height:100%;border-radius:99px;background:var(--primary)}
     .team-bar-fill.over{background:var(--warning)}
+    .team-food-log{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f5f5f5}
+    .team-food-log:last-child{border-bottom:none}
+    .team-food-thumb{width:42px;height:42px;border-radius:8px;object-fit:cover;flex-shrink:0}
+    .team-food-icon{width:42px;height:42px;border-radius:8px;background:#EEE;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
+    .team-section-label{font-size:.75rem;font-weight:700;color:var(--primary-dark);margin-bottom:4px;padding-top:8px;border-top:1px solid #f0f0f0;margin-top:8px}
+    .team-walk-row{padding:10px 0;border-bottom:1px solid var(--border)}
+    .team-walk-row:last-child{border-bottom:none}
+    .team-walk-bar{background:#EEE;border-radius:99px;height:8px;overflow:hidden;margin:4px 0}
+    .team-walk-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--walk),#42A5F5);transition:width .5s}
     textarea.firebase-cfg{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:.72rem;font-family:monospace;height:90px;resize:vertical;margin-top:6px}
     /* Walking */
     .walk-prize-board{background:linear-gradient(135deg,#1565C0,#1976D2);border-radius:16px;padding:20px;color:#fff;text-align:center;margin-bottom:12px}
@@ -296,7 +307,7 @@
   <div class="card">
     <h2>👥 チームの今日の進捗</h2>
     <div id="team-no-firebase">
-      <div class="firebase-notice">🔗 Firebaseを設定すると、チームメンバーのカロリー進捗をリアルタイムで確認できます。</div>
+      <div class="firebase-notice">🔗 Firebaseを設定すると、チームメンバーのカロリー進捗・食事ログ・歩数をリアルタイムで確認できます。</div>
       <button class="save-btn" onclick="showPage('settings')">⚙️ 設定タブへ</button>
     </div>
     <div id="team-connected" style="display:none">
@@ -309,8 +320,13 @@
     </div>
   </div>
   <div class="card" id="team-ranking-card" style="display:none">
-    <h2>🏆 今日のランキング</h2>
+    <h2>🏆 今日のカロリーランキング</h2>
     <div id="team-ranking-list"></div>
+  </div>
+  <div class="card" id="team-walk-card" style="display:none">
+    <h2>🚶 チームの歩数ランキング</h2>
+    <div style="font-size:.75rem;color:var(--muted);margin-bottom:10px">今月の獲得賞金・歩数ランキング</div>
+    <div id="team-walk-list"><div class="empty-state">データを読み込み中...</div></div>
   </div>
 </div>
 
@@ -676,37 +692,80 @@ function renderTeam(){
     g('team-no-firebase').style.display='block';
     g('team-connected').style.display='none';
     g('team-ranking-card').style.display='none';
+    g('team-walk-card').style.display='none';
     return;
   }
   g('team-no-firebase').style.display='none';
   g('team-connected').style.display='block';
   g('team-ranking-card').style.display='block';
+  g('team-walk-card').style.display='block';
   g('team-room-display').textContent=S.roomCode;
   const today=toDate(new Date());
+  const now=new Date();
+  const monthStr=`${now.getFullYear()}-${p2(now.getMonth()+1)}`;
   const members=Object.entries(S.teamData).map(([name,data])=>{
-    const kcal=(data.logs||[]).filter(l=>l.date===today).reduce((s,l)=>s+(l.kcal||0),0);
+    const todayLogs=(data.logs||[]).filter(l=>l.date===today);
+    const kcal=todayLogs.reduce((s,l)=>s+(l.kcal||0),0);
     const goal=data.goal||1600;
-    return{name,kcal,goal,pct:Math.min(100,Math.round(kcal/goal*100)),lastSeen:data.lastSeen||0};
+    const walkLogs=data.walkLogs||{};
+    const todaySteps=walkLogs[today]||0;
+    const monthlySteps=Object.entries(walkLogs)
+      .filter(([d])=>d.startsWith(monthStr))
+      .reduce((s,[,v])=>s+v,0);
+    return{name,kcal,goal,pct:Math.min(100,Math.round(kcal/goal*100)),
+      lastSeen:data.lastSeen||0,todayLogs,todaySteps,monthlySteps};
   }).sort((a,b)=>b.lastSeen-a.lastSeen);
   g('member-count').textContent=`（${members.length}人）`;
   const listEl=g('team-member-list');
   if(!members.length){listEl.innerHTML='<div class="empty-state">まだメンバーがいません</div>';return;}
   listEl.innerHTML=members.map(m=>{
     const over=m.kcal>m.goal,isMe=m.name===S.userName;
-    return`<div class="team-member">
-      <div class="team-avatar" style="${isMe?'background:var(--accent)':''}">${m.name.slice(0,1)}</div>
-      <div style="flex:1">
-        <div style="display:flex;justify-content:space-between">
-          <span style="font-size:.9rem;font-weight:700">${m.name}${isMe?' 👤':''}</span>
-          <span style="font-size:.85rem;font-weight:800;color:var(--accent)">${m.kcal}<span style="font-size:.70rem;color:var(--muted)">/${m.goal}</span></span>
+    const foodHtml=m.todayLogs.length>0
+      ?m.todayLogs.map(l=>`
+        <div class="team-food-log">
+          ${l.thumb
+            ?`<img src="${l.thumb}" class="team-food-thumb">`
+            :`<div class="team-food-icon">${l.emoji||'🍽️'}</div>`}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l.emoji||''}${l.name||'記録あり'}</div>
+            <div style="font-size:.70rem;color:var(--muted)">${l.meal||''}${l.kcal!=null?' · '+l.kcal+'kcal':''}</div>
+          </div>
+        </div>`).join('')
+      :'<div style="font-size:.78rem;color:var(--muted);padding:4px 0">まだ記録なし</div>';
+    const walkPct=Math.min(100,m.todaySteps/8000*100);
+    const walkColor=m.todaySteps>=8000?'var(--walk)':'var(--muted)';
+    return`<div class="team-member-card">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="team-avatar" style="${isMe?'background:var(--accent)':''}">${m.name.slice(0,1)}</div>
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:.9rem;font-weight:700">${m.name}${isMe?' 👤':''}</span>
+            <span style="font-size:.85rem;font-weight:800;color:var(--accent)">${m.kcal}<span style="font-size:.70rem;color:var(--muted)">/${m.goal}kcal</span></span>
+          </div>
+          <div class="team-bar-mini"><div class="team-bar-fill${over?' over':''}" style="width:${m.pct}%"></div></div>
+          <div style="font-size:.70rem;color:${over?'var(--danger)':'var(--muted)'}">
+            ${over?`⚠️ 超過 +${m.kcal-m.goal}kcal`:`残り ${m.goal-m.kcal}kcal`}
+          </div>
         </div>
-        <div class="team-bar-mini"><div class="team-bar-fill${over?' over':''}" style="width:${m.pct}%"></div></div>
-        <div style="font-size:.70rem;color:${over?'var(--danger)':'var(--muted)'}">
-          ${over?`⚠️ 超過 +${m.kcal-m.goal}kcal`:`残り ${m.goal-m.kcal}kcal`}
+      </div>
+      <div>
+        <div class="team-section-label">📸 今日の食事</div>
+        ${foodHtml}
+      </div>
+      <div>
+        <div class="team-section-label">🚶 今日の歩数</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:1">
+            <div class="team-walk-bar"><div class="team-walk-fill" style="width:${walkPct}%"></div></div>
+          </div>
+          <span style="font-size:.82rem;font-weight:700;color:${walkColor};white-space:nowrap">
+            ${m.todaySteps.toLocaleString()}歩${m.todaySteps>=8000?' 🎉':''}
+          </span>
         </div>
       </div>
     </div>`;
   }).join('');
+  // カロリーランキング
   const ranked=[...members].sort((a,b)=>(b.goal-b.kcal)-(a.goal-a.kcal));
   const medals=['🥇','🥈','🥉'];
   g('team-ranking-list').innerHTML=ranked.map((m,i)=>`
@@ -717,6 +776,26 @@ function renderTeam(){
         ${m.kcal>m.goal?`超過 ${m.kcal-m.goal}kcal`:`残 ${m.goal-m.kcal}kcal`}
       </span>
     </div>`).join('');
+  // 歩数ランキング
+  const walkRanked=[...members].sort((a,b)=>b.monthlySteps-a.monthlySteps);
+  g('team-walk-list').innerHTML=walkRanked.length?walkRanked.map((m,i)=>{
+    const pct=Math.min(100,m.monthlySteps/240000*100);
+    const isMe=m.name===S.userName;
+    return`<div class="team-walk-row">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span style="font-size:1.1rem;width:24px;text-align:center">${medals[i]||i+1}</span>
+        <div class="team-avatar" style="width:32px;height:32px;font-size:.82rem;${isMe?'background:var(--accent)':''}">${m.name.slice(0,1)}</div>
+        <span style="flex:1;font-size:.88rem;font-weight:${isMe?700:400}">${m.name}${isMe?' 👤':''}</span>
+        <div style="text-align:right">
+          <div style="font-size:.88rem;font-weight:800;color:var(--walk)">¥${m.monthlySteps.toLocaleString()}</div>
+          <div style="font-size:.68rem;color:var(--muted)">今日:${m.todaySteps.toLocaleString()}歩${m.todaySteps>=8000?' 🎉':''}</div>
+        </div>
+      </div>
+      <div class="team-walk-bar"><div class="team-walk-fill" style="width:${pct}%"></div></div>
+      <div style="font-size:.68rem;color:var(--muted);text-align:right">月間${m.monthlySteps.toLocaleString()} / 240,000歩</div>
+    </div>`;
+  }).join('')
+  :'<div class="empty-state">まだ歩数データがありません</div>';
 }
 
 // ===== HISTORY =====
@@ -843,9 +922,21 @@ async function syncFB(){
   if(!S.db||!S.roomCode||!S.userName)return;
   try{
     const{ref,set}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
+    const today=toDate(new Date());
+    const sevenDaysAgo=toDate(new Date(Date.now()-7*86400000));
+    // 今月の歩数のみ同期
+    const now=new Date();
+    const monthStr=`${now.getFullYear()}-${p2(now.getMonth()+1)}`;
+    const walkLogsMonth={};
+    Object.entries(S.walkLogs).forEach(([d,v])=>{if(d.startsWith(monthStr))walkLogsMonth[d]=v;});
     await set(S._ref(S.db,`rooms/${S.roomCode}/members/${S.userName}`),{
       goal:S.goal,lastSeen:Date.now(),
-      logs:S.logs.filter(l=>l.date>=toDate(new Date(Date.now()-7*86400000))).slice(-100).map(l=>({...l,thumb:null}))
+      walkLogs:walkLogsMonth,
+      // 今日の食事は画像あり、過去分は画像なし（容量節約）
+      logs:S.logs.filter(l=>l.date>=sevenDaysAgo).slice(-100).map(l=>({
+        ...l,
+        thumb:l.date===today?(l.thumb||null):null
+      }))
     });
   }catch(e){console.error('sync:',e);}
 }
