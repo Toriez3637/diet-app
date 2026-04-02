@@ -139,7 +139,7 @@
     /* Edit modal */
     .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:center;justify-content:center;padding:16px}
     .modal-bg.show{display:flex}
-    .modal-box{background:#fff;border-radius:20px;padding:22px;width:100%;max-width:380px}
+    .modal-box{background:#fff;border-radius:20px;padding:22px;width:100%;max-width:380px;max-height:90vh;overflow-y:auto}
     .modal-box h3{font-size:1rem;margin-bottom:14px;color:var(--primary-dark)}
     .modal-box input{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:.9rem;margin-bottom:8px}
     .modal-box label{font-size:.82rem;color:var(--muted);display:block;margin-bottom:3px}
@@ -147,6 +147,18 @@
     .modal-btn-row button{flex:1;padding:11px;border:none;border-radius:10px;font-size:.9rem;font-weight:700;cursor:pointer}
     .btn-cancel{background:#EEE;color:var(--text)}
     .btn-save{background:var(--primary);color:#fff}
+    .edit-meal-sel{display:flex;gap:5px;margin-bottom:10px}
+    .edit-meal-btn{flex:1;padding:7px 2px;border:2px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-size:.72rem;text-align:center;font-weight:600}
+    .edit-meal-btn.active{border-color:var(--primary);background:#F1F8E9;color:var(--primary-dark)}
+    .edit-img-preview{width:100%;max-height:160px;object-fit:cover;border-radius:10px;margin-bottom:8px;display:block}
+    .edit-img-btns{display:flex;gap:6px;margin-bottom:8px}
+    .edit-img-btn{flex:1;padding:9px 4px;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-size:.78rem;font-weight:600}
+    .edit-img-del{width:100%;padding:7px;border:1px solid var(--danger);border-radius:8px;background:#fff;color:var(--danger);cursor:pointer;font-size:.78rem;font-weight:600;margin-bottom:8px}
+    /* Lightbox */
+    .lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:999;align-items:center;justify-content:center}
+    .lightbox.show{display:flex}
+    .lightbox img{max-width:96vw;max-height:90vh;border-radius:8px;object-fit:contain}
+    .lightbox-close{position:absolute;top:16px;right:20px;color:#fff;font-size:2rem;cursor:pointer;line-height:1;background:none;border:none}
     /* Misc */
     .spinner{display:inline-block;width:18px;height:18px;border:3px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:6px}
     @keyframes spin{to{transform:rotate(360deg)}}
@@ -424,15 +436,37 @@
 <div class="modal-bg" id="edit-modal">
   <div class="modal-box">
     <h3>✏️ 食事記録を編集</h3>
+    <label>食事タイミング</label>
+    <div class="edit-meal-sel">
+      <button class="edit-meal-btn" data-meal="朝食" data-emoji="🌅" onclick="selectEditMeal(this)">🌅 朝食</button>
+      <button class="edit-meal-btn" data-meal="昼食" data-emoji="☀️" onclick="selectEditMeal(this)">☀️ 昼食</button>
+      <button class="edit-meal-btn" data-meal="夕食" data-emoji="🌙" onclick="selectEditMeal(this)">🌙 夕食</button>
+      <button class="edit-meal-btn" data-meal="間食" data-emoji="🍪" onclick="selectEditMeal(this)">🍪 間食</button>
+    </div>
     <label>食品名</label>
     <input type="text" id="edit-name" placeholder="食品名">
     <label>カロリー（任意）</label>
     <input type="number" id="edit-kcal" placeholder="kcal（空欄OK）">
+    <label>写真</label>
+    <img id="edit-img-preview" class="edit-img-preview" src="" style="display:none">
+    <div class="edit-img-btns">
+      <button class="edit-img-btn" onclick="document.getElementById('edit-file-camera').click()">📷 撮影で変更</button>
+      <button class="edit-img-btn" onclick="document.getElementById('edit-file-library').click()">🖼️ アルバムから</button>
+    </div>
+    <button class="edit-img-del" id="edit-img-del-btn" onclick="removeEditImg()" style="display:none">🗑️ 写真を削除</button>
+    <input type="file" id="edit-file-camera" accept="image/*" capture="environment" onchange="handleEditImg(event)" style="display:none">
+    <input type="file" id="edit-file-library" accept="image/*" onchange="handleEditImg(event)" style="display:none">
     <div class="modal-btn-row">
       <button class="btn-cancel" onclick="closeEditModal()">キャンセル</button>
       <button class="btn-save" onclick="saveEdit()">保存</button>
     </div>
   </div>
+</div>
+
+<!-- ライトボックス -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="">
 </div>
 
 <div class="toast" id="toast"></div>
@@ -572,7 +606,7 @@ function renderToday(){
   if(!tl.length){listEl.innerHTML='<div class="empty-state">まだ記録がありません</div>';return;}
   listEl.innerHTML=tl.slice().reverse().map(l=>`
     <div class="log-entry">
-      ${l.thumb?`<img class="log-thumb" src="${l.thumb}" alt="">`:`<div class="log-thumb-placeholder">${l.emoji}</div>`}
+      ${l.thumb?`<img class="log-thumb" src="${l.thumb}" alt="" onclick="openImg('${l.id}')" style="cursor:zoom-in">`:`<div class="log-thumb-placeholder">${l.emoji}</div>`}
       <div class="log-info">
         <div class="log-meal">${l.emoji} ${l.meal}</div>
         <div class="log-items">${l.name}</div>
@@ -596,16 +630,65 @@ window.openEdit=function(id){
   S.editingId=id;
   g('edit-name').value=log.name||'';
   g('edit-kcal').value=log.kcal!=null?log.kcal:'';
+  // 食事タイミングボタン
+  document.querySelectorAll('.edit-meal-btn').forEach(btn=>{
+    btn.classList.toggle('active',btn.dataset.meal===log.meal);
+  });
+  // 画像プレビュー
+  const prev=g('edit-img-preview'),del=g('edit-img-del-btn');
+  if(log.thumb){prev.src=log.thumb;prev.style.display='block';del.style.display='block';}
+  else{prev.src='';prev.style.display='none';del.style.display='none';}
+  g('edit-file-camera').value='';g('edit-file-library').value='';
+  S.editingThumb=log.thumb||null;
   g('edit-modal').classList.add('show');
 }
-window.closeEditModal=function(){g('edit-modal').classList.remove('show');S.editingId=null;}
+window.closeEditModal=function(){g('edit-modal').classList.remove('show');S.editingId=null;S.editingThumb=undefined;}
+window.selectEditMeal=function(btn){
+  document.querySelectorAll('.edit-meal-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+window.handleEditImg=function(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const img=new Image();
+    img.onload=()=>{
+      const canvas=document.createElement('canvas');
+      const max=800;let w=img.width,h=img.height;
+      if(w>max){h=Math.round(h*max/w);w=max;}
+      canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      S.editingThumb=canvas.toDataURL('image/jpeg',.7);
+      const prev=g('edit-img-preview');
+      prev.src=S.editingThumb;prev.style.display='block';
+      g('edit-img-del-btn').style.display='block';
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+window.removeEditImg=function(){
+  S.editingThumb=null;
+  g('edit-img-preview').src='';g('edit-img-preview').style.display='none';
+  g('edit-img-del-btn').style.display='none';
+}
 window.saveEdit=function(){
   const log=S.logs.find(l=>l.id===S.editingId);if(!log)return;
   log.name=g('edit-name').value.trim()||log.name;
   const k=g('edit-kcal').value;
   log.kcal=k?parseInt(k):null;
+  const activeBtn=document.querySelector('.edit-meal-btn.active');
+  if(activeBtn){log.meal=activeBtn.dataset.meal;log.emoji=activeBtn.dataset.emoji;}
+  if(S.editingThumb!==undefined)log.thumb=S.editingThumb;
   save();syncFB();closeEditModal();renderToday();toast('✅ 編集しました');
 }
+// ライトボックス
+window.openImg=function(id){
+  const log=S.logs.find(l=>l.id===id);if(!log||!log.thumb)return;
+  g('lightbox-img').src=log.thumb;
+  g('lightbox').classList.add('show');
+}
+window.closeLightbox=function(){g('lightbox').classList.remove('show');}
 
 // ===== WALKING =====
 window.saveTodaySteps=function(){
