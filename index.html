@@ -366,12 +366,25 @@ window.handleFileSelect=function(event){
   const file=event.target.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=e=>{
-    S.imgB64=e.target.result;
-    g('preview-img').src=e.target.result;
-    g('preview-wrap').style.display='block';
-    g('analyze-btn').style.display='block';
-    g('ai-result').style.display='none';
-    S.pendingItems=[];
+    // 画像を圧縮してからセット（最大800px、品質0.7）
+    const img=new Image();
+    img.onload=function(){
+      const canvas=document.createElement('canvas');
+      const MAX=800;
+      let w=img.width,h=img.height;
+      if(w>h){if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}}
+      else{if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}}
+      canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      const compressed=canvas.toDataURL('image/jpeg',0.7);
+      S.imgB64=compressed;
+      g('preview-img').src=compressed;
+      g('preview-wrap').style.display='block';
+      g('analyze-btn').style.display='block';
+      g('ai-result').style.display='none';
+      S.pendingItems=[];
+    };
+    img.src=e.target.result;
   };
   reader.readAsDataURL(file);
 }
@@ -400,7 +413,13 @@ window.analyzeImage=async function(){
     const parsed=JSON.parse(match?match[0]:data.content[0].text);
     S.pendingItems=parsed.items||[];
     renderAI(parsed);
-  }catch(e){toast('❌ '+e.message);console.error(e);}
+  }catch(e){
+    let msg=e.message||'不明なエラー';
+    if(msg.includes('Failed to fetch')||msg.includes('Load failed')){
+      msg='通信エラー：APIキーを確認するか、ネットワーク接続を確認してください';
+    }
+    toast('❌ '+msg);console.error(e);
+  }
   finally{btn.disabled=false;btn.innerHTML='🤖 AIでカロリーを解析';}
 }
 
