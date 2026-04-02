@@ -264,6 +264,8 @@
       <input type="password" id="api-key-input" placeholder="sk-ant-..." style="width:150px">
     </div>
     <button class="save-btn" onclick="saveApiKey()">🔑 保存</button>
+    <button class="save-btn" style="margin-top:6px;background:#1565C0" onclick="testApiKey()">🔍 接続テスト</button>
+    <div id="api-test-result" style="margin-top:8px;font-size:.82rem;text-align:center"></div>
   </div>
 
   <div class="card">
@@ -392,7 +394,8 @@ window.handleFileSelect=function(event){
 // ---- AI Analysis ----
 window.analyzeImage=async function(){
   if(!S.imgB64)return;
-  if(!S.apiKey){toast('⚠️ APIキーを設定してください');showPage('settings');return;}
+  const apiKey=S.apiKey.trim();
+  if(!apiKey){toast('⚠️ APIキーを設定してください');showPage('settings');return;}
   const btn=g('analyze-btn');
   btn.disabled=true;btn.innerHTML='<span class="spinner"></span>AI解析中...';
   try{
@@ -401,13 +404,26 @@ window.analyzeImage=async function(){
     const b64=parts[1];
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':S.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-calls':'true'},
-      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1024,messages:[{role:'user',content:[
-        {type:'image',source:{type:'base64',media_type:mime,data:b64}},
-        {type:'text',text:'この料理の写真から食べ物とカロリーを推定。必ずJSONのみ返答：{"items":[{"name":"食品名","kcal":数値},...]}'}
-      ]}]})
+      mode:'cors',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':apiKey,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-calls':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:1024,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:mime,data:b64}},
+          {type:'text',text:'この料理の写真から食べ物とカロリーを推定。必ずJSONのみ返答：{"items":[{"name":"食品名","kcal":数値},...]}'}
+        ]}]
+      })
     });
-    if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'APIエラー '+res.status)}
+    if(!res.ok){
+      const e=await res.json().catch(()=>({}));
+      throw new Error(e.error?.message||`APIエラー: ${res.status}`);
+    }
     const data=await res.json();
     const match=data.content[0].text.match(/\{[\s\S]*\}/);
     const parsed=JSON.parse(match?match[0]:data.content[0].text);
@@ -415,10 +431,10 @@ window.analyzeImage=async function(){
     renderAI(parsed);
   }catch(e){
     let msg=e.message||'不明なエラー';
-    if(msg.includes('Failed to fetch')||msg.includes('Load failed')){
-      msg='通信エラー：APIキーを確認するか、ネットワーク接続を確認してください';
+    if(msg.includes('Failed to fetch')||msg.toLowerCase().includes('load failed')||msg.includes('NetworkError')){
+      msg='通信エラー。設定タブで「APIキーの確認」ボタンを試してください';
     }
-    toast('❌ '+msg);console.error(e);
+    toast('❌ '+msg);console.error('API Error:',e);
   }
   finally{btn.disabled=false;btn.innerHTML='🤖 AIでカロリーを解析';}
 }
@@ -641,6 +657,31 @@ window.saveApiKey=function(){
   save();
   g('api-notice').style.display=S.apiKey?'none':'block';
   toast(S.apiKey?'🔑 APIキーを保存しました':'⚠️ クリアしました');
+}
+
+window.testApiKey=async function(){
+  const apiKey=g('api-key-input').value.trim();
+  if(!apiKey){toast('⚠️ まずAPIキーを入力してください');return;}
+  const el=g('api-test-result');
+  el.textContent='🔄 テスト中...';el.style.color='var(--muted)';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',mode:'cors',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-calls':'true'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:10,messages:[{role:'user',content:'hi'}]})
+    });
+    if(res.ok){
+      el.textContent='✅ 接続成功！APIキーは正常です';el.style.color='var(--primary-dark)';
+      S.apiKey=apiKey;save();g('api-notice').style.display='none';
+    }else{
+      const e=await res.json().catch(()=>({}));
+      el.textContent='❌ '+(e.error?.message||`エラー: ${res.status}`);el.style.color='var(--danger)';
+    }
+  }catch(e){
+    el.textContent='❌ 通信エラー: ブラウザがAPIへの接続をブロックしています。別のブラウザをお試しください';
+    el.style.color='var(--danger)';
+    console.error(e);
+  }
 }
 
 window.saveFirebase=async function(){
