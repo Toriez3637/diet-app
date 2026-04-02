@@ -10,43 +10,34 @@
   <meta name="apple-mobile-web-app-title" content="ダイエット">
   <meta name="theme-color" content="#388E3C">
   <style>
-    :root{--primary:#4CAF50;--primary-dark:#388E3C;--accent:#FF7043;--bg:#F1F8E9;--card:#FFF;--text:#2E3A23;--muted:#78909C;--border:#E0E0E0;--warning:#FF9800;--danger:#F44336;--shadow:0 2px 12px rgba(0,0,0,0.08)}
+    :root{--primary:#4CAF50;--primary-dark:#388E3C;--accent:#FF7043;--bg:#F1F8E9;--card:#FFF;--text:#2E3A23;--muted:#78909C;--border:#E0E0E0;--warning:#FF9800;--danger:#F44336;--walk:#1976D2;--shadow:0 2px 12px rgba(0,0,0,0.08)}
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:-apple-system,'Hiragino Sans','Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-tap-highlight-color:transparent}
     header{background:linear-gradient(135deg,var(--primary-dark),var(--primary));color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.15);position:sticky;top:0;z-index:100}
     header h1{font-size:1.2rem;font-weight:700}
     header .subtitle{font-size:.78rem;opacity:.85}
-    #sync-indicator{margin-left:auto;font-size:.72rem;background:rgba(255,255,255,.2);padding:3px 8px;border-radius:99px;display:none}
-    #sync-indicator.on{display:inline-block}
     nav{display:flex;background:#fff;border-bottom:2px solid var(--border);overflow-x:auto;position:sticky;top:52px;z-index:99}
     nav::-webkit-scrollbar{display:none}
-    nav button{flex:1;padding:10px 6px;border:none;background:none;cursor:pointer;font-size:.76rem;color:var(--muted);white-space:nowrap;border-bottom:3px solid transparent;font-weight:600;min-width:58px}
+    nav button{flex:1;padding:10px 4px;border:none;background:none;cursor:pointer;font-size:.70rem;color:var(--muted);white-space:nowrap;border-bottom:3px solid transparent;font-weight:600;min-width:50px}
     nav button.active{color:var(--primary-dark);border-bottom-color:var(--primary)}
     .page{display:none;padding:12px;max-width:600px;margin:0 auto;padding-bottom:40px}
     .page.active{display:block}
     .card{background:var(--card);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
     .card h2{font-size:.95rem;color:var(--primary-dark);margin-bottom:12px;display:flex;align-items:center;gap:6px}
-    .upload-area{border:2px dashed var(--primary);border-radius:12px;padding:24px 16px;text-align:center;cursor:pointer;background:#F9FBE7}
+    /* Upload */
+    .upload-area{border:2px dashed var(--primary);border-radius:12px;padding:20px 16px;text-align:center;cursor:pointer;background:#F9FBE7}
     .upload-area:active{background:#DCEDC8}
     .upload-area input[type=file]{display:none}
-    .upload-area .icon{font-size:2.5rem;margin-bottom:6px}
-    .upload-area p{color:var(--muted);font-size:.85rem}
-    .upload-area strong{color:var(--primary-dark);font-size:.95rem}
+    .upload-area .icon{font-size:2.2rem;margin-bottom:4px}
+    .upload-area p{color:var(--muted);font-size:.82rem}
+    .upload-area strong{color:var(--primary-dark);font-size:.9rem}
     #preview-wrap{margin-top:10px;display:none}
-    #preview-img{width:100%;max-height:240px;object-fit:cover;border-radius:12px;display:block}
-    .analyze-btn{width:100%;margin-top:10px;padding:14px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;display:none}
-    .ai-result{display:none;margin-top:12px;background:#F0FFF4;border:1px solid #A5D6A7;border-radius:12px;padding:14px}
-    .ai-result h3{color:var(--primary-dark);margin-bottom:8px;font-size:.9rem}
-    .food-items{list-style:none}
-    .food-items li{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #E8F5E9;gap:8px}
-    .food-items li:last-child{border-bottom:none}
-    .food-name{flex:1;font-size:.88rem}
-    .food-kcal input{width:68px;text-align:right;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:.88rem;font-weight:700;color:var(--accent)}
-    .total-row{display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:2px solid var(--primary);font-weight:700;font-size:1.05rem}
+    #preview-img{width:100%;max-height:220px;object-fit:cover;border-radius:12px;display:block}
     .btn-add{width:100%;margin-top:10px;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:.95rem;font-weight:700;cursor:pointer}
     .meal-type-selector{display:flex;gap:6px;margin-bottom:12px}
-    .meal-btn{flex:1;padding:8px 4px;border:2px solid var(--border);border-radius:10px;background:#fff;cursor:pointer;font-size:.78rem;text-align:center;font-weight:600}
+    .meal-btn{flex:1;padding:8px 4px;border:2px solid var(--border);border-radius:10px;background:#fff;cursor:pointer;font-size:.75rem;text-align:center;font-weight:600}
     .meal-btn.active{border-color:var(--primary);background:#F1F8E9;color:var(--primary-dark)}
+    /* Calorie ring */
     .calorie-ring{display:flex;justify-content:center;margin:8px 0}
     .ring-wrap{position:relative;width:150px;height:150px}
     .ring-wrap svg{transform:rotate(-90deg)}
@@ -60,16 +51,20 @@
     .progress-bar-wrap{background:#EEE;border-radius:99px;height:10px;overflow:hidden;margin:6px 0}
     .progress-bar{height:100%;border-radius:99px;transition:width .5s;background:linear-gradient(90deg,var(--primary),#8BC34A)}
     .progress-bar.over{background:linear-gradient(90deg,var(--warning),var(--danger))}
+    /* Log entry */
     .log-entry{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
     .log-entry:last-child{border-bottom:none}
-    .log-thumb{width:50px;height:50px;border-radius:10px;object-fit:cover;flex-shrink:0}
-    .log-thumb-placeholder{width:50px;height:50px;border-radius:10px;background:#EEE;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.4rem}
-    .log-info{flex:1}
+    .log-thumb{width:48px;height:48px;border-radius:10px;object-fit:cover;flex-shrink:0}
+    .log-thumb-placeholder{width:48px;height:48px;border-radius:10px;background:#EEE;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.3rem}
+    .log-info{flex:1;min-width:0}
     .log-meal{font-size:.72rem;color:var(--primary-dark);font-weight:700}
-    .log-items{font-size:.83rem;margin:2px 0}
+    .log-items{font-size:.82rem;margin:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .log-time{font-size:.70rem;color:var(--muted)}
-    .log-kcal{font-size:.95rem;font-weight:800;color:var(--accent);white-space:nowrap}
-    .log-del{background:none;border:none;color:var(--danger);cursor:pointer;font-size:1rem}
+    .log-kcal{font-size:.9rem;font-weight:800;color:var(--accent);white-space:nowrap}
+    .log-actions{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+    .log-del{background:none;border:none;color:var(--danger);cursor:pointer;font-size:.9rem;padding:2px}
+    .log-edit{background:none;border:none;color:var(--walk);cursor:pointer;font-size:.9rem;padding:2px}
+    /* Week chart */
     .week-chart{display:flex;align-items:flex-end;gap:5px;height:120px;padding:0 2px}
     .week-col{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end}
     .week-bar-wrap{width:100%;background:#EEE;border-radius:6px 6px 0 0;height:90px;display:flex;align-items:flex-end;overflow:hidden}
@@ -77,6 +72,7 @@
     .week-bar.over{background:linear-gradient(180deg,var(--warning),var(--danger))}
     .week-day{font-size:.68rem;color:var(--muted);margin-top:3px}
     .week-val{font-size:.62rem;font-weight:700;margin-bottom:2px}
+    /* Month */
     .month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
     .month-head{font-size:.68rem;color:var(--muted);padding:3px 0;font-weight:700}
     .month-day{font-size:.72rem;padding:5px 1px;border-radius:6px}
@@ -84,6 +80,7 @@
     .month-day.over-goal{background:#FFCCBC;font-weight:700}
     .month-day.today{outline:2px solid var(--primary)}
     .month-day.empty{color:#CCC}
+    /* Settings */
     .setting-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
     .setting-row:last-child{border-bottom:none}
     .setting-label{font-size:.88rem}
@@ -93,6 +90,7 @@
     .save-btn:hover{background:var(--primary-dark)}
     .api-notice{background:#FFF3E0;border:1px solid #FFB74D;border-radius:10px;padding:10px;font-size:.80rem;color:#E65100;margin-bottom:10px}
     .firebase-notice{background:#E3F2FD;border:1px solid #90CAF9;border-radius:10px;padding:10px;font-size:.80rem;color:#1565C0;margin-bottom:10px}
+    /* Team */
     .team-member{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
     .team-member:last-child{border-bottom:none}
     .team-avatar{width:40px;height:40px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;flex-shrink:0}
@@ -100,6 +98,45 @@
     .team-bar-fill{height:100%;border-radius:99px;background:var(--primary)}
     .team-bar-fill.over{background:var(--warning)}
     textarea.firebase-cfg{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:.72rem;font-family:monospace;height:90px;resize:vertical;margin-top:6px}
+    /* Walking */
+    .walk-prize-board{background:linear-gradient(135deg,#1565C0,#1976D2);border-radius:16px;padding:20px;color:#fff;text-align:center;margin-bottom:12px}
+    .walk-prize-amount{font-size:2.4rem;font-weight:900;margin:8px 0}
+    .walk-prize-sub{font-size:.82rem;opacity:.85}
+    .walk-progress-wrap{background:rgba(255,255,255,.2);border-radius:99px;height:16px;overflow:hidden;margin:12px 0}
+    .walk-progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#FFD54F,#FF6F00);transition:width .8s ease}
+    .walk-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
+    .walk-stat{background:rgba(255,255,255,.15);border-radius:10px;padding:10px;text-align:center}
+    .walk-stat-val{font-size:1.1rem;font-weight:800}
+    .walk-stat-label{font-size:.68rem;opacity:.8;margin-top:2px}
+    .walk-input-card{background:var(--card);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+    .walk-day-list{max-height:300px;overflow-y:auto}
+    .walk-day-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)}
+    .walk-day-row:last-child{border-bottom:none}
+    .walk-day-label{font-size:.82rem;min-width:50px;font-weight:600}
+    .walk-day-input{flex:1;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:.88rem;text-align:right}
+    .walk-day-bar{width:60px;height:8px;background:#EEE;border-radius:99px;overflow:hidden;flex-shrink:0}
+    .walk-day-fill{height:100%;border-radius:99px;background:var(--walk)}
+    .walk-day-fill.goal{background:#FFB300}
+    .walk-day-emoji{font-size:1rem;min-width:20px;text-align:center}
+    .walk-calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px}
+    .walk-cal-head{font-size:.65rem;color:var(--muted);text-align:center;font-weight:700;padding:2px}
+    .walk-cal-day{font-size:.68rem;padding:6px 2px;border-radius:6px;text-align:center;position:relative}
+    .walk-cal-day.empty{color:#CCC}
+    .walk-cal-day.has-steps{background:#BBDEFB;font-weight:700;color:#1565C0}
+    .walk-cal-day.goal-met{background:#1976D2;color:#fff;font-weight:700}
+    .walk-cal-day.today-w{outline:2px solid var(--walk)}
+    /* Edit modal */
+    .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:center;justify-content:center;padding:16px}
+    .modal-bg.show{display:flex}
+    .modal-box{background:#fff;border-radius:20px;padding:22px;width:100%;max-width:380px}
+    .modal-box h3{font-size:1rem;margin-bottom:14px;color:var(--primary-dark)}
+    .modal-box input{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:.9rem;margin-bottom:8px}
+    .modal-box label{font-size:.82rem;color:var(--muted);display:block;margin-bottom:3px}
+    .modal-btn-row{display:flex;gap:8px;margin-top:12px}
+    .modal-btn-row button{flex:1;padding:11px;border:none;border-radius:10px;font-size:.9rem;font-weight:700;cursor:pointer}
+    .btn-cancel{background:#EEE;color:var(--text)}
+    .btn-save{background:var(--primary);color:#fff}
+    /* Misc */
     .spinner{display:inline-block;width:18px;height:18px;border:3px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:6px}
     @keyframes spin{to{transform:rotate(360deg)}}
     .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:#333;color:#fff;padding:9px 18px;border-radius:99px;font-size:.83rem;z-index:999;transition:transform .3s ease;pointer-events:none;white-space:nowrap}
@@ -116,12 +153,12 @@
     <h1>ダイエットサポート</h1>
     <div class="subtitle" id="header-sub">AI食事管理アプリ</div>
   </div>
-  <div id="sync-indicator">🔄 同期中</div>
 </header>
 
 <nav>
   <button class="active" onclick="showPage('record')">📸 記録</button>
   <button onclick="showPage('today')">📊 今日</button>
+  <button onclick="showPage('walk')">🚶 歩数</button>
   <button onclick="showPage('team')">👥 チーム</button>
   <button onclick="showPage('history')">📅 履歴</button>
   <button onclick="showPage('settings')">⚙️ 設定</button>
@@ -139,30 +176,26 @@
     </div>
   </div>
   <div class="card">
-    <h2>📸 写真からカロリー計算</h2>
-    <div id="api-notice" class="api-notice" style="display:none">⚠️ Claude APIキーが未設定です。設定タブで入力してください。手動入力は下の欄から可能です。</div>
+    <h2>📸 食事を記録</h2>
     <div class="upload-area" onclick="document.getElementById('file-input').click()">
       <input type="file" id="file-input" accept="image/*" capture="environment" onchange="handleFileSelect(event)">
       <div class="icon">📷</div>
       <strong>タップして撮影・写真を選択</strong>
-      <p>料理の写真をアップロード</p>
+      <p>写真は任意です</p>
     </div>
     <div id="preview-wrap"><img id="preview-img" src="" alt="プレビュー"></div>
-    <button class="analyze-btn" id="analyze-btn" onclick="analyzeImage()">🤖 AIでカロリーを解析</button>
-    <div class="ai-result" id="ai-result">
-      <h3>🤖 AI解析結果 <span class="badge">編集可</span></h3>
-      <ul class="food-items" id="food-list"></ul>
-      <div class="total-row"><span>合計カロリー</span><span id="total-kcal" style="color:var(--accent)">0 kcal</span></div>
-      <button class="btn-add" onclick="addToLog()">✅ 食事ログに追加</button>
-    </div>
   </div>
   <div class="card">
-    <h2>✏️ 手動入力</h2>
-    <div style="display:flex;gap:8px">
-      <input type="text" id="manual-name" placeholder="食品名" style="flex:1;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:.88rem">
-      <input type="number" id="manual-kcal" placeholder="kcal" style="width:80px;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:.88rem;text-align:right">
+    <h2>✏️ 食事内容・カロリー入力</h2>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <input type="text" id="manual-name" placeholder="食品名（例：ご飯・唐揚げ）" style="flex:1;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:.88rem">
     </div>
-    <button class="btn-add" style="margin-top:10px" onclick="addManual()">＋ 追加</button>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+      <input type="number" id="manual-kcal" placeholder="カロリー（任意）" style="flex:1;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:.88rem">
+      <span style="font-size:.85rem;color:var(--muted)">kcal</span>
+    </div>
+    <div style="font-size:.75rem;color:var(--muted);margin-bottom:8px">※写真または食品名があれば登録できます</div>
+    <button class="btn-add" onclick="addManual()">✅ 食事ログに追加</button>
   </div>
 </div>
 
@@ -197,6 +230,64 @@
   <div class="card">
     <h2>🍽️ 今日の食事ログ</h2>
     <div id="today-log-list"><div class="empty-state">まだ記録がありません</div></div>
+  </div>
+</div>
+
+<!-- 🚶 ウォーキング -->
+<div id="page-walk" class="page">
+  <!-- 賞金ボード -->
+  <div class="walk-prize-board">
+    <div style="font-size:1.1rem;font-weight:700">🏆 月間ウォーキング賞金ボード</div>
+    <div style="font-size:.82rem;opacity:.8;margin-top:4px">24万歩達成で <strong>¥240,000</strong> ゲット！（1歩=1円）</div>
+    <div class="walk-prize-amount" id="walk-prize-amount">¥0</div>
+    <div class="walk-prize-sub">
+      <span id="walk-total-steps">0</span> 歩 ／ 240,000歩
+    </div>
+    <div class="walk-progress-wrap">
+      <div class="walk-progress-fill" id="walk-prize-bar" style="width:0%"></div>
+    </div>
+    <div class="walk-stats">
+      <div class="walk-stat">
+        <div class="walk-stat-val" id="walk-days-done">0日</div>
+        <div class="walk-stat-label">達成日数</div>
+      </div>
+      <div class="walk-stat">
+        <div class="walk-stat-val" id="walk-avg-steps">0</div>
+        <div class="walk-stat-label">平均歩数</div>
+      </div>
+      <div class="walk-stat">
+        <div class="walk-stat-val" id="walk-remaining-steps">240,000</div>
+        <div class="walk-stat-label">残り歩数</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 今日の歩数入力 -->
+  <div class="card">
+    <h2>👟 今日の歩数を入力</h2>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="number" id="today-steps-input" placeholder="例：8000" min="0" max="99999"
+        style="flex:1;border:2px solid var(--walk);border-radius:10px;padding:12px;font-size:1.1rem;text-align:center">
+      <span style="font-size:.9rem;color:var(--muted)">歩</span>
+    </div>
+    <div style="margin-top:6px;font-size:.78rem;color:var(--muted);text-align:center">目標：8,000歩／日</div>
+    <button class="save-btn" style="background:var(--walk);margin-top:10px" onclick="saveTodaySteps()">👟 記録する</button>
+  </div>
+
+  <!-- 今月のカレンダー -->
+  <div class="card">
+    <h2>📅 今月の歩数カレンダー</h2>
+    <div class="walk-calendar" id="walk-calendar"></div>
+    <div style="margin-top:10px;font-size:.75rem;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap">
+      <span>🟦 歩数あり</span>
+      <span>🟦✨ 8,000歩達成</span>
+    </div>
+  </div>
+
+  <!-- 日別記録リスト -->
+  <div class="card">
+    <h2>📋 日別歩数記録</h2>
+    <div class="walk-day-list" id="walk-day-list"></div>
   </div>
 </div>
 
@@ -255,7 +346,6 @@
     </div>
     <button class="save-btn" onclick="saveProfile()">💾 保存</button>
   </div>
-
   <div class="card">
     <h2>🤖 Claude AI 設定</h2>
     <div class="api-notice">写真から料理を自動認識するにはClaude APIキーが必要です。<br><strong>console.anthropic.com</strong> で取得できます（無料枠あり）</div>
@@ -264,14 +354,13 @@
       <input type="password" id="api-key-input" placeholder="sk-ant-..." style="width:150px">
     </div>
     <div class="setting-row">
-      <div><div class="setting-label">プロキシURL</div><div class="setting-sub">Cloudflare WorkerのURL（スマホ対応に必要）</div></div>
+      <div><div class="setting-label">プロキシURL</div><div class="setting-sub">Cloudflare WorkerのURL</div></div>
       <input type="text" id="proxy-url-input" placeholder="https://xxx.workers.dev" style="width:150px;text-align:left;font-size:.75rem">
     </div>
     <button class="save-btn" onclick="saveApiKey()">🔑 保存</button>
     <button class="save-btn" style="margin-top:6px;background:#1565C0" onclick="testApiKey()">🔍 接続テスト</button>
     <div id="api-test-result" style="margin-top:8px;font-size:.82rem;text-align:center"></div>
   </div>
-
   <div class="card">
     <h2>🔗 チーム共有（Firebase）</h2>
     <div class="firebase-notice">
@@ -286,33 +375,38 @@
     </div>
     <div style="margin-top:8px">
       <div class="setting-label" style="margin-bottom:4px">Firebase設定コード</div>
-      <div class="setting-sub" style="margin-bottom:6px">firebaseConfig の { } の中身を貼り付け</div>
-      <textarea class="firebase-cfg" id="firebase-cfg-input" placeholder='{"apiKey":"AIza...","authDomain":"xxx.firebaseapp.com","databaseURL":"https://xxx-default-rtdb.firebaseio.com","projectId":"xxx"}'></textarea>
+      <textarea class="firebase-cfg" id="firebase-cfg-input" placeholder='{"apiKey":"AIza...","databaseURL":"https://xxx-default-rtdb.firebaseio.com",...}'></textarea>
     </div>
     <button class="save-btn" onclick="saveFirebase()" id="firebase-save-btn">🔗 Firebase接続</button>
     <div id="firebase-status" style="margin-top:8px;font-size:.80rem;text-align:center;color:var(--muted)"></div>
   </div>
-
   <div class="card">
     <h2>📱 スマホへの追加方法</h2>
-    <div style="font-size:.82rem;color:var(--text);line-height:1.8">
-      <p><strong>iPhone（Safari）：</strong><br>
-      ① SafariでURLを開く<br>
-      ② 下の共有ボタン（□↑）をタップ<br>
-      ③「ホーム画面に追加」→「追加」<br>
-      ④ ホーム画面にアイコンが表示されます！</p>
-      <p style="margin-top:10px"><strong>Android（Chrome）：</strong><br>
-      ① ChromeでURLを開く<br>
-      ② 右上（⋮）→「ホーム画面に追加」<br>
-      ③ アプリとしてインストール完了！</p>
+    <div style="font-size:.82rem;line-height:1.8">
+      <p><strong>iPhone（Safari）：</strong> 共有ボタン（□↑）→「ホーム画面に追加」</p>
+      <p><strong>Android（Chrome）：</strong> メニュー（⋮）→「ホーム画面に追加」</p>
     </div>
   </div>
-
   <div class="card">
     <h2>🗑️ データ管理</h2>
     <div class="setting-row">
-      <div><div class="setting-label">全データをリセット</div><div class="setting-sub">全ての記録を削除します</div></div>
+      <div><div class="setting-label">全データをリセット</div></div>
       <button onclick="resetData()" style="background:var(--danger);color:#fff;border:none;padding:7px 12px;border-radius:8px;cursor:pointer;font-size:.83rem;font-weight:700">リセット</button>
+    </div>
+  </div>
+</div>
+
+<!-- 編集モーダル -->
+<div class="modal-bg" id="edit-modal">
+  <div class="modal-box">
+    <h3>✏️ 食事記録を編集</h3>
+    <label>食品名</label>
+    <input type="text" id="edit-name" placeholder="食品名">
+    <label>カロリー（任意）</label>
+    <input type="number" id="edit-kcal" placeholder="kcal（空欄OK）">
+    <div class="modal-btn-row">
+      <button class="btn-cancel" onclick="closeEditModal()">キャンセル</button>
+      <button class="btn-save" onclick="saveEdit()">保存</button>
     </div>
   </div>
 </div>
@@ -320,12 +414,22 @@
 <div class="toast" id="toast"></div>
 
 <script type="module">
-const S={logs:[],goal:1600,userName:'',apiKey:'',proxyUrl:'',roomCode:'',firebaseCfg:'',meal:'朝食',mealEmoji:'🌅',imgB64:null,pendingItems:[],db:null,teamData:{}};
+const S={
+  logs:[],goal:1600,userName:'',apiKey:'',proxyUrl:'',roomCode:'',firebaseCfg:'',
+  meal:'朝食',mealEmoji:'🌅',imgB64:null,
+  walkLogs:{}, // {YYYY-MM-DD: steps}
+  db:null,teamData:{},
+  editingId:null
+};
 
+// ===== STORAGE =====
 function load(){
-  try{const s=JSON.parse(localStorage.getItem('diet_v2')||'{}');
+  try{
+    const s=JSON.parse(localStorage.getItem('diet_v3')||'{}');
     S.logs=s.logs||[];S.goal=s.goal||1600;S.userName=s.userName||'';
-    S.apiKey=s.apiKey||'';S.proxyUrl=s.proxyUrl||'';S.roomCode=s.roomCode||'';S.firebaseCfg=s.firebaseCfg||'';
+    S.apiKey=s.apiKey||'';S.proxyUrl=s.proxyUrl||'';
+    S.roomCode=s.roomCode||'';S.firebaseCfg=s.firebaseCfg||'';
+    S.walkLogs=s.walkLogs||{};
   }catch(e){}
   g('goal-kcal-input').value=S.goal;
   g('user-name-input').value=S.userName;
@@ -333,166 +437,93 @@ function load(){
   g('proxy-url-input').value=S.proxyUrl;
   g('room-code-input').value=S.roomCode;
   g('firebase-cfg-input').value=S.firebaseCfg;
-  if(!S.apiKey)g('api-notice').style.display='block';
   updateHeader();
 }
-
 function save(){
-  localStorage.setItem('diet_v2',JSON.stringify({logs:S.logs,goal:S.goal,userName:S.userName,apiKey:S.apiKey,roomCode:S.roomCode,firebaseCfg:S.firebaseCfg}));
+  localStorage.setItem('diet_v3',JSON.stringify({
+    logs:S.logs,goal:S.goal,userName:S.userName,
+    apiKey:S.apiKey,proxyUrl:S.proxyUrl,
+    roomCode:S.roomCode,firebaseCfg:S.firebaseCfg,
+    walkLogs:S.walkLogs
+  }));
 }
 
+// ===== UTILS =====
 function g(id){return document.getElementById(id)}
 function toDate(d){return`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`}
 function p2(n){return String(n).padStart(2,'0')}
 function updateHeader(){g('header-sub').textContent=S.userName?`${S.userName}さんの食事管理`:'AI食事管理アプリ'}
-
 function toast(msg){const t=g('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800)}
 window.showToast=toast;
 
-// ---- Navigation ----
+// ===== NAVIGATION =====
 window.showPage=function(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
   g('page-'+id).classList.add('active');
-  const idx={record:0,today:1,team:2,history:3,settings:4}[id];
+  const idx={record:0,today:1,walk:2,team:3,history:4,settings:5}[id];
   document.querySelectorAll('nav button')[idx].classList.add('active');
   if(id==='today')renderToday();
+  if(id==='walk')renderWalk();
   if(id==='history')renderHistory();
   if(id==='team')renderTeam();
 }
 
-// ---- Meal type ----
+// ===== MEAL TYPE =====
 window.selectMeal=function(name,emoji,el){
   S.meal=name;S.mealEmoji=emoji;
   document.querySelectorAll('.meal-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
 }
 
-// ---- Upload ----
+// ===== FILE UPLOAD =====
 window.handleFileSelect=function(event){
   const file=event.target.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=e=>{
-    // 画像を圧縮してからセット（最大800px、品質0.7）
     const img=new Image();
     img.onload=function(){
       const canvas=document.createElement('canvas');
-      const MAX=800;
-      let w=img.width,h=img.height;
+      const MAX=800;let w=img.width,h=img.height;
       if(w>h){if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}}
       else{if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}}
       canvas.width=w;canvas.height=h;
       canvas.getContext('2d').drawImage(img,0,0,w,h);
-      const compressed=canvas.toDataURL('image/jpeg',0.7);
-      S.imgB64=compressed;
-      g('preview-img').src=compressed;
+      S.imgB64=canvas.toDataURL('image/jpeg',0.7);
+      g('preview-img').src=S.imgB64;
       g('preview-wrap').style.display='block';
-      g('analyze-btn').style.display='block';
-      g('ai-result').style.display='none';
-      S.pendingItems=[];
     };
     img.src=e.target.result;
   };
   reader.readAsDataURL(file);
 }
 
-// ---- AI Analysis ----
-window.analyzeImage=async function(){
-  if(!S.imgB64)return;
-  const apiKey=S.apiKey.trim();
-  if(!apiKey){toast('⚠️ APIキーを設定してください');showPage('settings');return;}
-  const btn=g('analyze-btn');
-  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>AI解析中...';
-  try{
-    const parts=S.imgB64.split(',');
-    const mime=parts[0].match(/:(.*?);/)[1];
-    const b64=parts[1];
-    // プロキシURLがあればそちらを使う（スマホ対応）
-    const endpoint=S.proxyUrl?S.proxyUrl:'https://api.anthropic.com/v1/messages';
-    const headers={'Content-Type':'application/json','x-api-key':apiKey};
-    if(!S.proxyUrl){headers['anthropic-version']='2023-06-01';headers['anthropic-dangerous-direct-browser-calls']='true';}
-    const res=await fetch(endpoint,{
-      method:'POST',
-      mode:'cors',
-      headers,
-      body:JSON.stringify({
-        model:'claude-haiku-4-5-20251001',
-        max_tokens:1024,
-        messages:[{role:'user',content:[
-          {type:'image',source:{type:'base64',media_type:mime,data:b64}},
-          {type:'text',text:'この料理の写真から食べ物とカロリーを推定。必ずJSONのみ返答：{"items":[{"name":"食品名","kcal":数値},...]}'}
-        ]}]
-      })
-    });
-    if(!res.ok){
-      const e=await res.json().catch(()=>({}));
-      throw new Error(e.error?.message||`APIエラー: ${res.status}`);
-    }
-    const data=await res.json();
-    const match=data.content[0].text.match(/\{[\s\S]*\}/);
-    const parsed=JSON.parse(match?match[0]:data.content[0].text);
-    S.pendingItems=parsed.items||[];
-    renderAI(parsed);
-  }catch(e){
-    let msg=e.message||'不明なエラー';
-    if(msg.includes('Failed to fetch')||msg.toLowerCase().includes('load failed')||msg.includes('NetworkError')){
-      msg='通信エラー。設定タブで「APIキーの確認」ボタンを試してください';
-    }
-    toast('❌ '+msg);console.error('API Error:',e);
-  }
-  finally{btn.disabled=false;btn.innerHTML='🤖 AIでカロリーを解析';}
-}
-
-function renderAI(parsed){
-  const list=g('food-list');list.innerHTML='';
-  let total=0;
-  (parsed.items||[]).forEach((item,i)=>{
-    total+=item.kcal;
-    const li=document.createElement('li');
-    li.innerHTML=`<span class="food-name">${item.name}</span><span class="food-kcal"><input type="number" value="${item.kcal}" onchange="updateKcal(${i},this.value)"> kcal</span>`;
-    list.appendChild(li);
-  });
-  g('total-kcal').textContent=total+' kcal';
-  g('ai-result').style.display='block';
-}
-
-window.updateKcal=function(i,v){
-  S.pendingItems[i].kcal=parseInt(v)||0;
-  g('total-kcal').textContent=S.pendingItems.reduce((s,x)=>s+x.kcal,0)+' kcal';
-}
-
-// ---- Add to log ----
-window.addToLog=function(){
-  if(!S.pendingItems.length)return;
-  addEntry(S.pendingItems,S.imgB64);
-  g('ai-result').style.display='none';
-  g('preview-wrap').style.display='none';
-  g('analyze-btn').style.display='none';
-  g('file-input').value='';
-  S.imgB64=null;S.pendingItems=[];
-}
-
+// ===== ADD MANUAL =====
 window.addManual=function(){
   const name=g('manual-name').value.trim();
-  const kcal=parseInt(g('manual-kcal').value)||0;
-  if(!name||!kcal){toast('⚠️ 食品名とカロリーを入力してください');return;}
-  addEntry([{name,kcal}],null);
-  g('manual-name').value='';g('manual-kcal').value='';
-}
-
-function addEntry(items,thumb){
+  const kcalVal=g('manual-kcal').value;
+  const kcal=kcalVal?parseInt(kcalVal):null;
+  // 画像か食品名のどちらかあれば登録OK
+  if(!name&&!S.imgB64){toast('⚠️ 食品名または写真が必要です');return;}
   const now=new Date();
-  const totalKcal=items.reduce((s,i)=>s+i.kcal,0);
-  S.logs.push({id:Date.now(),date:toDate(now),time:now.toTimeString().slice(0,5),meal:S.meal,emoji:S.mealEmoji,items:[...items],thumb,totalKcal});
+  S.logs.push({
+    id:Date.now(),date:toDate(now),time:now.toTimeString().slice(0,5),
+    meal:S.meal,emoji:S.mealEmoji,
+    name:name||(S.imgB64?'写真の食事':'食事'),
+    kcal,thumb:S.imgB64
+  });
   save();syncFB();
-  toast(`✅ ${S.meal}を記録（${totalKcal} kcal）`);
+  g('manual-name').value='';g('manual-kcal').value='';
+  g('preview-wrap').style.display='none';
+  g('file-input').value='';S.imgB64=null;
+  toast(`✅ ${S.meal}を記録しました${kcal?`（${kcal} kcal）`:''}`);
 }
 
-// ---- Today ----
+// ===== TODAY =====
 function renderToday(){
   const today=toDate(new Date());
   const tl=S.logs.filter(l=>l.date===today);
-  const total=tl.reduce((s,l)=>s+l.totalKcal,0);
+  const total=tl.reduce((s,l)=>s+(l.kcal||0),0);
   const goal=S.goal;
   const pct=Math.min(100,Math.round(total/goal*100));
   const circ=389.6;
@@ -509,9 +540,10 @@ function renderToday(){
   remEl.style.color=rem>=0?'var(--primary-dark)':'var(--danger)';
   g('stat-meals').textContent=tl.length+'食';
   const mk={'朝食':0,'昼食':0,'夕食':0,'間食':0};
-  tl.forEach(l=>{mk[l.meal]=(mk[l.meal]||0)+l.totalKcal;});
+  tl.forEach(l=>{mk[l.meal]=(mk[l.meal]||0)+(l.kcal||0);});
   g('stat-breakfast').textContent=mk['朝食'];g('stat-lunch').textContent=mk['昼食'];
   g('stat-dinner').textContent=mk['夕食'];g('stat-snack').textContent=mk['間食'];
+
   const listEl=g('today-log-list');
   if(!tl.length){listEl.innerHTML='<div class="empty-state">まだ記録がありません</div>';return;}
   listEl.innerHTML=tl.slice().reverse().map(l=>`
@@ -519,12 +551,13 @@ function renderToday(){
       ${l.thumb?`<img class="log-thumb" src="${l.thumb}" alt="">`:`<div class="log-thumb-placeholder">${l.emoji}</div>`}
       <div class="log-info">
         <div class="log-meal">${l.emoji} ${l.meal}</div>
-        <div class="log-items">${l.items.map(i=>i.name).join('、')}</div>
+        <div class="log-items">${l.name}</div>
         <div class="log-time">⏰ ${l.time}</div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-        <div class="log-kcal">${l.totalKcal} kcal</div>
-        <button class="log-del" onclick="deleteLog(${l.id})">🗑</button>
+      <div class="log-actions">
+        <div class="log-kcal">${l.kcal!=null?l.kcal+' kcal':'--'}</div>
+        <button class="log-edit" onclick="openEdit(${l.id})" title="編集">✏️</button>
+        <button class="log-del" onclick="deleteLog(${l.id})" title="削除">🗑</button>
       </div>
     </div>`).join('');
 }
@@ -534,7 +567,110 @@ window.deleteLog=function(id){
   S.logs=S.logs.filter(l=>l.id!==id);save();syncFB();renderToday();toast('🗑️ 削除しました');
 }
 
-// ---- Team ----
+window.openEdit=function(id){
+  const log=S.logs.find(l=>l.id===id);if(!log)return;
+  S.editingId=id;
+  g('edit-name').value=log.name||'';
+  g('edit-kcal').value=log.kcal!=null?log.kcal:'';
+  g('edit-modal').classList.add('show');
+}
+window.closeEditModal=function(){g('edit-modal').classList.remove('show');S.editingId=null;}
+window.saveEdit=function(){
+  const log=S.logs.find(l=>l.id===S.editingId);if(!log)return;
+  log.name=g('edit-name').value.trim()||log.name;
+  const k=g('edit-kcal').value;
+  log.kcal=k?parseInt(k):null;
+  save();syncFB();closeEditModal();renderToday();toast('✅ 編集しました');
+}
+
+// ===== WALKING =====
+window.saveTodaySteps=function(){
+  const steps=parseInt(g('today-steps-input').value)||0;
+  if(steps<0||steps>99999){toast('⚠️ 正しい歩数を入力してください');return;}
+  const today=toDate(new Date());
+  S.walkLogs[today]=steps;
+  save();syncFB();renderWalk();
+  toast(`👟 ${steps.toLocaleString()}歩を記録しました！${steps>=8000?'🎉 目標達成！':''}`);
+}
+
+function getMonthWalkData(){
+  const now=new Date();
+  const year=now.getFullYear(),month=now.getMonth();
+  const days={};
+  Object.entries(S.walkLogs).forEach(([date,steps])=>{
+    const d=new Date(date+'T00:00:00');
+    if(d.getFullYear()===year&&d.getMonth()===month)days[date]=steps;
+  });
+  return{year,month,days};
+}
+
+function renderWalk(){
+  const {year,month,days}=getMonthWalkData();
+  const totalSteps=Object.values(days).reduce((s,v)=>s+v,0);
+  const goalMonth=240000;
+  const daysAchieved=Object.values(days).filter(v=>v>=8000).length;
+  const recordedDays=Object.keys(days).length;
+  const avg=recordedDays>0?Math.round(totalSteps/recordedDays):0;
+  const remaining=Math.max(0,goalMonth-totalSteps);
+  const pct=Math.min(100,totalSteps/goalMonth*100);
+  const prize=totalSteps;
+
+  g('walk-prize-amount').textContent='¥'+prize.toLocaleString();
+  g('walk-total-steps').textContent=totalSteps.toLocaleString();
+  g('walk-prize-bar').style.width=pct+'%';
+  g('walk-days-done').textContent=daysAchieved+'日';
+  g('walk-avg-steps').textContent=avg.toLocaleString();
+  g('walk-remaining-steps').textContent=remaining.toLocaleString();
+
+  // 今日の歩数を入力欄にセット
+  const todayStr=toDate(new Date());
+  if(S.walkLogs[todayStr]){g('today-steps-input').value=S.walkLogs[todayStr];}
+
+  // カレンダー
+  const firstDay=new Date(year,month,1).getDay();
+  const lastDate=new Date(year,month+1,0).getDate();
+  const heads=['日','月','火','水','木','金','土'];
+  let cal=heads.map(h=>`<div class="walk-cal-head">${h}</div>`).join('');
+  for(let i=0;i<firstDay;i++)cal+='<div class="walk-cal-day empty"></div>';
+  for(let d=1;d<=lastDate;d++){
+    const str=`${year}-${p2(month+1)}-${p2(d)}`;
+    const steps=days[str]||0;
+    const isToday=str===todayStr;
+    let cls='walk-cal-day';
+    if(steps>0&&steps<8000)cls+=' has-steps';
+    else if(steps>=8000)cls+=' goal-met';
+    if(isToday)cls+=' today-w';
+    const label=steps>=8000?'✨':steps>0?'👣':'';
+    cal+=`<div class="${cls}" title="${steps>0?steps+'歩':''}">${d}<div style="font-size:.6rem">${label}</div></div>`;
+  }
+  g('walk-calendar').innerHTML=cal;
+
+  // 日別リスト
+  const listEl=g('walk-day-list');
+  const allDates=Object.keys(S.walkLogs).sort().reverse().slice(0,30);
+  if(!allDates.length){listEl.innerHTML='<div class="empty-state">まだ記録がありません</div>';return;}
+  listEl.innerHTML=allDates.map(date=>{
+    const steps=S.walkLogs[date];
+    const d=new Date(date+'T00:00:00');
+    const label=`${d.getMonth()+1}/${d.getDate()}（${'日月火水木金土'[d.getDay()]}）`;
+    const pct=Math.min(100,steps/8000*100);
+    const achieved=steps>=8000;
+    const emoji=steps>=8000?'🎉':steps>=5000?'👣':steps>0?'🐢':'';
+    return`<div class="walk-day-row">
+      <div class="walk-day-label">${label}</div>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:2px">
+          <span style="font-weight:700;color:${achieved?'var(--walk)':'var(--text)'}">${steps.toLocaleString()}歩</span>
+          <span style="color:var(--muted)">¥${steps.toLocaleString()}</span>
+        </div>
+        <div class="walk-day-bar"><div class="walk-day-fill${achieved?' goal':''}" style="width:${pct}%"></div></div>
+      </div>
+      <div class="walk-day-emoji">${emoji}</div>
+    </div>`;
+  }).join('');
+}
+
+// ===== TEAM =====
 function renderTeam(){
   if(!S.db){
     g('team-no-firebase').style.display='block';
@@ -548,7 +684,7 @@ function renderTeam(){
   g('team-room-display').textContent=S.roomCode;
   const today=toDate(new Date());
   const members=Object.entries(S.teamData).map(([name,data])=>{
-    const kcal=(data.logs||[]).filter(l=>l.date===today).reduce((s,l)=>s+l.totalKcal,0);
+    const kcal=(data.logs||[]).filter(l=>l.date===today).reduce((s,l)=>s+(l.kcal||0),0);
     const goal=data.goal||1600;
     return{name,kcal,goal,pct:Math.min(100,Math.round(kcal/goal*100)),lastSeen:data.lastSeen||0};
   }).sort((a,b)=>b.lastSeen-a.lastSeen);
@@ -560,25 +696,20 @@ function renderTeam(){
     return`<div class="team-member">
       <div class="team-avatar" style="${isMe?'background:var(--accent)':''}">${m.name.slice(0,1)}</div>
       <div style="flex:1">
-        <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;justify-content:space-between">
           <span style="font-size:.9rem;font-weight:700">${m.name}${isMe?' 👤':''}</span>
-          <span style="font-size:.85rem;font-weight:800;color:var(--accent)">${m.kcal} <span style="font-size:.70rem;color:var(--muted)">/ ${m.goal}</span></span>
+          <span style="font-size:.85rem;font-weight:800;color:var(--accent)">${m.kcal}<span style="font-size:.70rem;color:var(--muted)">/${m.goal}</span></span>
         </div>
         <div class="team-bar-mini"><div class="team-bar-fill${over?' over':''}" style="width:${m.pct}%"></div></div>
         <div style="font-size:.70rem;color:${over?'var(--danger)':'var(--muted)'}">
-          ${over?`⚠️ 目標超過 +${m.kcal-m.goal}kcal`:`残り ${m.goal-m.kcal}kcal`}
+          ${over?`⚠️ 超過 +${m.kcal-m.goal}kcal`:`残り ${m.goal-m.kcal}kcal`}
         </div>
       </div>
     </div>`;
   }).join('');
-  const ranked=[...members].sort((a,b)=>(a.kcal>a.goal?a.kcal-a.goal:-999)-(b.kcal>b.goal?b.kcal-b.goal:-999)).reverse();
+  const ranked=[...members].sort((a,b)=>(b.goal-b.kcal)-(a.goal-a.kcal));
   const medals=['🥇','🥈','🥉'];
-  // Sort by least overage or most remaining
-  const betterRanked=[...members].sort((a,b)=>{
-    const sa=a.goal-a.kcal, sb=b.goal-b.kcal;
-    return sb-sa;
-  });
-  g('team-ranking-list').innerHTML=betterRanked.map((m,i)=>`
+  g('team-ranking-list').innerHTML=ranked.map((m,i)=>`
     <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">
       <span style="font-size:1.1rem;width:24px;text-align:center">${medals[i]||i+1}</span>
       <span style="flex:1;font-size:.88rem;font-weight:${m.name===S.userName?700:400}">${m.name}</span>
@@ -588,14 +719,14 @@ function renderTeam(){
     </div>`).join('');
 }
 
-// ---- History ----
+// ===== HISTORY =====
 function renderHistory(){
   const dayNames=['日','月','火','水','木','金','土'];
   const days=[];
   for(let i=6;i>=0;i--){
     const d=new Date();d.setDate(d.getDate()-i);
     const str=toDate(d);
-    const kcal=S.logs.filter(l=>l.date===str).reduce((s,l)=>s+l.totalKcal,0);
+    const kcal=S.logs.filter(l=>l.date===str).reduce((s,l)=>s+(l.kcal||0),0);
     days.push({label:dayNames[d.getDay()],kcal,isToday:i===0});
   }
   const max=Math.max(...days.map(d=>d.kcal),S.goal,1);
@@ -612,7 +743,7 @@ function renderHistory(){
   g('month-label').textContent=`${year}年${month+1}月`;
   const firstDay=new Date(year,month,1).getDay(),lastDate=new Date(year,month+1,0).getDate();
   const todayStr=toDate(now),dk={};
-  S.logs.filter(l=>l.date.startsWith(`${year}-${p2(month+1)}`)).forEach(l=>{dk[l.date]=(dk[l.date]||0)+l.totalKcal;});
+  S.logs.filter(l=>l.date.startsWith(`${year}-${p2(month+1)}`)).forEach(l=>{dk[l.date]=(dk[l.date]||0)+(l.kcal||0);});
   let html=['日','月','火','水','木','金','土'].map(h=>`<div class="month-head">${h}</div>`).join('');
   for(let i=0;i<firstDay;i++)html+='<div class="month-day empty"></div>';
   for(let d=1;d<=lastDate;d++){
@@ -632,7 +763,7 @@ function renderHistory(){
   const cont=g('history-list');
   if(!dates.length){cont.innerHTML='<div class="empty-state">まだ記録がありません</div>';return;}
   cont.innerHTML=dates.map(date=>{
-    const logs=grouped[date],total=logs.reduce((s,l)=>s+l.totalKcal,0);
+    const logs=grouped[date],total=logs.reduce((s,l)=>s+(l.kcal||0),0);
     const d=new Date(date+'T00:00:00');
     const label=`${d.getMonth()+1}/${d.getDate()}（${'日月火水木金土'[d.getDay()]}）`;
     const over=total>S.goal;
@@ -643,27 +774,23 @@ function renderHistory(){
       </div>
       <div class="progress-bar-wrap"><div class="progress-bar${over?' over':''}" style="width:${Math.min(100,Math.round(total/S.goal*100))}%"></div></div>
       <div style="font-size:.75rem;color:var(--muted);margin-top:3px">
-        ${logs.map(l=>`${l.emoji}${l.meal} ${l.items.map(i=>i.name).join('・')}(${l.totalKcal}kcal)`).join(' / ')}
+        ${logs.map(l=>`${l.emoji}${l.name}${l.kcal!=null?`(${l.kcal}kcal)`:''}`).join(' / ')}
       </div>
     </div>`;
   }).join('');
 }
 
-// ---- Settings ----
+// ===== SETTINGS =====
 window.saveProfile=function(){
   S.goal=parseInt(g('goal-kcal-input').value)||1600;
   S.userName=g('user-name-input').value.trim();
   save();syncFB();updateHeader();toast('✅ 保存しました');
 }
-
 window.saveApiKey=function(){
   S.apiKey=g('api-key-input').value.trim();
   S.proxyUrl=g('proxy-url-input').value.trim().replace(/\/$/,'');
-  save();
-  g('api-notice').style.display=S.apiKey?'none':'block';
-  toast(S.apiKey?'🔑 APIキーを保存しました':'⚠️ クリアしました');
+  save();toast(S.apiKey?'🔑 APIキーを保存しました':'⚠️ クリアしました');
 }
-
 window.testApiKey=async function(){
   const apiKey=g('api-key-input').value.trim();
   if(!apiKey){toast('⚠️ まずAPIキーを入力してください');return;}
@@ -674,69 +801,44 @@ window.testApiKey=async function(){
     const endpoint=proxyUrl?proxyUrl:'https://api.anthropic.com/v1/messages';
     const headers={'Content-Type':'application/json','x-api-key':apiKey};
     if(!proxyUrl){headers['anthropic-version']='2023-06-01';headers['anthropic-dangerous-direct-browser-calls']='true';}
-    const res=await fetch(endpoint,{
-      method:'POST',mode:'cors',
-      headers,
+    const res=await fetch(endpoint,{method:'POST',mode:'cors',headers,
       body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:10,messages:[{role:'user',content:'hi'}]})
     });
-    if(res.ok){
-      el.textContent='✅ 接続成功！APIキーは正常です';el.style.color='var(--primary-dark)';
-      S.apiKey=apiKey;save();g('api-notice').style.display='none';
-    }else{
-      const e=await res.json().catch(()=>({}));
-      el.textContent='❌ '+(e.error?.message||`エラー: ${res.status}`);el.style.color='var(--danger)';
-    }
-  }catch(e){
-    el.textContent='❌ 通信エラー: ブラウザがAPIへの接続をブロックしています。別のブラウザをお試しください';
-    el.style.color='var(--danger)';
-    console.error(e);
-  }
+    if(res.ok){el.textContent='✅ 接続成功！APIキーは正常です';el.style.color='var(--primary-dark)';S.apiKey=apiKey;save();}
+    else{const e=await res.json().catch(()=>({}));el.textContent='❌ '+(e.error?.message||`エラー: ${res.status}`);el.style.color='var(--danger)';}
+  }catch(e){el.textContent='❌ 通信エラー: プロキシURLを設定してください';el.style.color='var(--danger)';}
 }
-
 window.saveFirebase=async function(){
   const cfgStr=g('firebase-cfg-input').value.trim();
   const room=g('room-code-input').value.trim();
   if(!cfgStr||!room){toast('⚠️ Firebase設定とグループコードを入力してください');return;}
   if(!S.userName){toast('⚠️ まずお名前を設定してください');return;}
   g('firebase-status').textContent='🔄 接続中...';
-  g('firebase-status').style.color='var(--muted)';
-  g('firebase-save-btn').disabled=true;
   const ok=await initFB(cfgStr,room);
-  g('firebase-save-btn').disabled=false;
   if(ok){S.roomCode=room;S.firebaseCfg=cfgStr;save();syncFB();toast('🔗 チームと接続しました！');}
 }
-
 window.resetData=function(){
   if(!confirm('全ての記録を削除しますか？'))return;
-  S.logs=[];save();syncFB();toast('🗑️ リセットしました');showPage('record');
+  S.logs=[];S.walkLogs={};save();syncFB();toast('🗑️ リセットしました');showPage('record');
 }
 
-// ---- Firebase ----
+// ===== FIREBASE =====
 async function initFB(cfgStr,room){
   try{
     const{initializeApp,getApps,deleteApp}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
     const{getDatabase,ref,set,onValue}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
-    const apps=getApps();
-    if(apps.length>0){try{await deleteApp(apps[0]);}catch(e){}}
+    const apps=getApps();if(apps.length>0){try{await deleteApp(apps[0]);}catch(e){}}
     const cfg=JSON.parse(cfgStr);
-    if(!cfg.databaseURL)throw new Error('databaseURLが必要です。Realtime Databaseを有効にしてください。');
-    const app=initializeApp(cfg);
-    S.db=getDatabase(app);
-    S._ref=ref;S._set=set;
+    if(!cfg.databaseURL)throw new Error('databaseURLが必要です');
+    const app=initializeApp(cfg);S.db=getDatabase(app);S._ref=ref;S._set=set;
     const roomRef=ref(S.db,`rooms/${room}/members`);
     onValue(roomRef,snap=>{S.teamData=snap.val()||{};renderTeam();});
-    g('sync-indicator').classList.add('on');
-    g('firebase-status').textContent='✅ 接続成功！';
-    g('firebase-status').style.color='var(--primary-dark)';
+    g('firebase-status').textContent='✅ 接続成功！';g('firebase-status').style.color='var(--primary-dark)';
     return true;
   }catch(e){
-    console.error(e);
-    g('firebase-status').textContent='❌ '+e.message;
-    g('firebase-status').style.color='var(--danger)';
-    return false;
+    g('firebase-status').textContent='❌ '+e.message;g('firebase-status').style.color='var(--danger)';return false;
   }
 }
-
 async function syncFB(){
   if(!S.db||!S.roomCode||!S.userName)return;
   try{
@@ -748,11 +850,9 @@ async function syncFB(){
   }catch(e){console.error('sync:',e);}
 }
 
-// ---- Init ----
+// ===== INIT =====
 load();
-if(S.firebaseCfg&&S.roomCode&&S.userName){
-  initFB(S.firebaseCfg,S.roomCode).then(ok=>{if(ok)syncFB();});
-}
+if(S.firebaseCfg&&S.roomCode&&S.userName){initFB(S.firebaseCfg,S.roomCode).then(ok=>{if(ok)syncFB();});}
 </script>
 </body>
 </html>
