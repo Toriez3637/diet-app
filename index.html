@@ -249,7 +249,7 @@
   <!-- 賞金ボード -->
   <div class="walk-prize-board">
     <div style="font-size:1.1rem;font-weight:700">🏆 月間ウォーキング賞金ボード</div>
-    <div style="font-size:.82rem;opacity:.8;margin-top:4px">24万歩達成で <strong>¥240,000</strong> ゲット！（1歩=1円）</div>
+    <div style="font-size:.82rem;opacity:.8;margin-top:4px">24万歩達成で <strong>¥120,000</strong> ゲット！（1歩=0.5円）</div>
     <div class="walk-prize-amount" id="walk-prize-amount">¥0</div>
     <div class="walk-prize-sub">
       <span id="walk-total-steps">0</span> 歩 ／ 240,000歩
@@ -629,7 +629,7 @@ function renderWalk(){
   const avg=recordedDays>0?Math.round(totalSteps/recordedDays):0;
   const remaining=Math.max(0,goalMonth-totalSteps);
   const pct=Math.min(100,totalSteps/goalMonth*100);
-  const prize=totalSteps;
+  const prize=Math.floor(totalSteps*0.5);
 
   g('walk-prize-amount').textContent='¥'+prize.toLocaleString();
   g('walk-total-steps').textContent=totalSteps.toLocaleString();
@@ -765,15 +765,15 @@ function renderTeam(){
       </div>
     </div>`;
   }).join('');
-  // カロリーランキング
-  const ranked=[...members].sort((a,b)=>(b.goal-b.kcal)-(a.goal-a.kcal));
+  // カロリーランキング（摂取カロリーが少ない順）
+  const ranked=[...members].sort((a,b)=>a.kcal-b.kcal);
   const medals=['🥇','🥈','🥉'];
   g('team-ranking-list').innerHTML=ranked.map((m,i)=>`
     <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">
       <span style="font-size:1.1rem;width:24px;text-align:center">${medals[i]||i+1}</span>
       <span style="flex:1;font-size:.88rem;font-weight:${m.name===S.userName?700:400}">${m.name}</span>
       <span style="font-size:.83rem;color:${m.kcal>m.goal?'var(--danger)':'var(--primary-dark)'}">
-        ${m.kcal>m.goal?`超過 ${m.kcal-m.goal}kcal`:`残 ${m.goal-m.kcal}kcal`}
+        ${m.kcal}kcal${m.kcal>m.goal?` ⚠️超過`:''}
       </span>
     </div>`).join('');
   // 歩数ランキング
@@ -787,7 +787,7 @@ function renderTeam(){
         <div class="team-avatar" style="width:32px;height:32px;font-size:.82rem;${isMe?'background:var(--accent)':''}">${m.name.slice(0,1)}</div>
         <span style="flex:1;font-size:.88rem;font-weight:${isMe?700:400}">${m.name}${isMe?' 👤':''}</span>
         <div style="text-align:right">
-          <div style="font-size:.88rem;font-weight:800;color:var(--walk)">¥${m.monthlySteps.toLocaleString()}</div>
+          <div style="font-size:.88rem;font-weight:800;color:var(--walk)">¥${Math.floor(m.monthlySteps*0.5).toLocaleString()}</div>
           <div style="font-size:.68rem;color:var(--muted)">今日:${m.todaySteps.toLocaleString()}歩${m.todaySteps>=8000?' 🎉':''}</div>
         </div>
       </div>
