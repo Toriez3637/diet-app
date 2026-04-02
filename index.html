@@ -689,6 +689,11 @@ window.openImg=function(id){
   g('lightbox').classList.add('show');
 }
 window.closeLightbox=function(){g('lightbox').classList.remove('show');}
+window.openImgSrc=function(src){
+  if(!src)return;
+  g('lightbox-img').src=src;
+  g('lightbox').classList.add('show');
+}
 
 // ===== WALKING =====
 window.saveTodaySteps=function(){
@@ -815,7 +820,7 @@ function renderTeam(){
       ?m.todayLogs.map(l=>`
         <div class="team-food-log">
           ${l.thumb
-            ?`<img src="${l.thumb}" class="team-food-thumb">`
+            ?`<img src="${l.thumb}" class="team-food-thumb" onclick="openImgSrc(this.src)" style="cursor:zoom-in">`
             :`<div class="team-food-icon">${l.emoji||'🍽️'}</div>`}
           <div style="flex:1;min-width:0">
             <div style="font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l.emoji||''}${l.name||'記録あり'}</div>
