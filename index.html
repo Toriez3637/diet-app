@@ -327,16 +327,22 @@
     </div>
   </div>
 
-  <!-- 今日の歩数入力 -->
+  <!-- 歩数入力 -->
   <div class="card">
-    <h2>👟 今日の歩数を入力</h2>
+    <h2>👟 歩数を入力</h2>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+      <input type="date" id="walk-date-input"
+        style="flex:1;border:2px solid var(--walk);border-radius:10px;padding:10px;font-size:.9rem;text-align:center;color:var(--text)">
+      <button onclick="setWalkDateToday()" style="padding:8px 12px;border:1px solid var(--walk);border-radius:10px;background:#E3F2FD;color:var(--walk);font-size:.78rem;font-weight:700;cursor:pointer;white-space:nowrap">今日</button>
+    </div>
+    <div id="walk-date-label" style="text-align:center;font-size:.82rem;font-weight:700;color:var(--walk);margin-bottom:6px"></div>
     <div style="display:flex;gap:8px;align-items:center">
       <input type="number" id="today-steps-input" placeholder="例：8000" min="0" max="99999"
         style="flex:1;border:2px solid var(--walk);border-radius:10px;padding:12px;font-size:1.1rem;text-align:center">
       <span style="font-size:.9rem;color:var(--muted)">歩</span>
     </div>
     <div style="margin-top:6px;font-size:.78rem;color:var(--muted);text-align:center">目標：8,000歩／日</div>
-    <button class="save-btn" style="background:var(--walk);margin-top:10px" onclick="saveTodaySteps()">👟 記録する</button>
+    <button class="save-btn" style="background:var(--walk);margin-top:10px" onclick="saveStepsForDate()">👟 記録する</button>
   </div>
 
   <!-- 今月のカレンダー -->
@@ -756,13 +762,59 @@ window.closeLightbox=function(){
 }
 
 // ===== WALKING =====
-window.saveTodaySteps=function(){
+function initWalkDate(){
+  const el=g('walk-date-input');
+  const today=toDate(new Date());
+  el.value=today;
+  el.max=today;
+  updateWalkDateLabel();
+  el.addEventListener('change',()=>{
+    updateWalkDateLabel();
+    // 選択した日付の既存歩数をセット
+    const existing=S.walkLogs[el.value];
+    g('today-steps-input').value=existing||'';
+  });
+}
+function updateWalkDateLabel(){
+  const el=g('walk-date-input');
+  const d=new Date(el.value+'T00:00:00');
+  const today=toDate(new Date());
+  const label=el.value===today?'📅 今日':`📅 ${d.getMonth()+1}/${d.getDate()}（${'日月火水木金土'[d.getDay()]}）`;
+  const existing=S.walkLogs[el.value];
+  g('walk-date-label').innerHTML=label+(existing?` <span style="font-size:.75rem;color:var(--muted)">（登録済：${existing.toLocaleString()}歩）</span>`:'');
+}
+window.setWalkDateToday=function(){
+  const today=toDate(new Date());
+  g('walk-date-input').value=today;
+  updateWalkDateLabel();
+  const existing=S.walkLogs[today];
+  g('today-steps-input').value=existing||'';
+}
+window.selectWalkCalDay=function(dateStr){
+  g('walk-date-input').value=dateStr;
+  updateWalkDateLabel();
+  const existing=S.walkLogs[dateStr];
+  g('today-steps-input').value=existing||'';
+  // スクロールして入力欄を表示
+  g('today-steps-input').focus();
+  g('today-steps-input').scrollIntoView({behavior:'smooth',block:'center'});
+}
+window.saveStepsForDate=function(){
+  const dateStr=g('walk-date-input').value;
+  if(!dateStr){toast('⚠️ 日付を選択してください');return;}
   const steps=parseInt(g('today-steps-input').value)||0;
   if(steps<0||steps>99999){toast('⚠️ 正しい歩数を入力してください');return;}
-  const today=toDate(new Date());
-  S.walkLogs[today]=steps;
-  save();syncFB();renderWalk();
-  toast(`👟 ${steps.toLocaleString()}歩を記録しました！${steps>=8000?'🎉 目標達成！':''}`);
+  const d=new Date(dateStr+'T00:00:00');
+  const label=`${d.getMonth()+1}/${d.getDate()}`;
+  if(steps===0){
+    delete S.walkLogs[dateStr];
+    save();syncFB();renderWalk();updateWalkDateLabel();
+    toast(`🗑️ ${label}の歩数を削除しました`);
+  }else{
+    S.walkLogs[dateStr]=steps;
+    save();syncFB();renderWalk();updateWalkDateLabel();
+    toast(`👟 ${label}に${steps.toLocaleString()}歩を記録！${steps>=8000?'🎉 目標達成！':''}`);
+  }
 }
 
 function getMonthWalkData(){
@@ -794,9 +846,12 @@ function renderWalk(){
   g('walk-avg-steps').textContent=avg.toLocaleString();
   g('walk-remaining-steps').textContent=remaining.toLocaleString();
 
-  // 今日の歩数を入力欄にセット
+  // 日付入力の初期化
   const todayStr=toDate(new Date());
-  if(S.walkLogs[todayStr]){g('today-steps-input').value=S.walkLogs[todayStr];}
+  const dateInput=g('walk-date-input');
+  if(!dateInput.value)dateInput.value=todayStr;
+  dateInput.max=todayStr;
+  updateWalkDateLabel();
 
   // カレンダー
   const firstDay=new Date(year,month,1).getDay();
@@ -808,12 +863,14 @@ function renderWalk(){
     const str=`${year}-${p2(month+1)}-${p2(d)}`;
     const steps=days[str]||0;
     const isToday=str===todayStr;
+    const isPast=str<=todayStr;
     let cls='walk-cal-day';
     if(steps>0&&steps<8000)cls+=' has-steps';
     else if(steps>=8000)cls+=' goal-met';
     if(isToday)cls+=' today-w';
     const label=steps>=8000?'✨':steps>0?'👣':'';
-    cal+=`<div class="${cls}" title="${steps>0?steps+'歩':''}">${d}<div style="font-size:.6rem">${label}</div></div>`;
+    const clickAttr=isPast?` onclick="selectWalkCalDay('${str}')" style="cursor:pointer"`:'';
+    cal+=`<div class="${cls}"${clickAttr} title="${steps>0?steps+'歩':'タップで入力'}">${d}<div style="font-size:.6rem">${label}</div></div>`;
   }
   g('walk-calendar').innerHTML=cal;
 
@@ -1321,6 +1378,7 @@ async function syncFB(){
 
 // ===== INIT =====
 load();
+initWalkDate();
 if(S.firebaseCfg&&S.roomCode&&S.userName){initFB(S.firebaseCfg,S.roomCode).then(ok=>{if(ok)syncFB();});}
 </script>
 </body>
