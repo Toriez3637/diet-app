@@ -159,6 +159,15 @@
     .lightbox.show{display:flex}
     .lightbox img{max-width:96vw;max-height:90vh;border-radius:8px;object-fit:contain}
     .lightbox-close{position:absolute;top:16px;right:20px;color:#fff;font-size:2rem;cursor:pointer;line-height:1;background:none;border:none}
+    /* Team history */
+    .team-history-btn{display:block;width:100%;margin-top:8px;padding:8px;border:1px solid var(--primary);border-radius:8px;background:#F9FBE7;color:var(--primary-dark);font-size:.78rem;font-weight:700;cursor:pointer;text-align:center}
+    .team-history-btn:active{background:#DCEDC8}
+    .team-day-tab{display:flex;gap:4px;overflow-x:auto;padding:4px 0;margin-bottom:12px}
+    .team-day-tab::-webkit-scrollbar{display:none}
+    .team-day-chip{padding:6px 10px;border-radius:99px;border:1.5px solid var(--border);background:#fff;font-size:.72rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
+    .team-day-chip.active{border-color:var(--primary);background:#F1F8E9;color:var(--primary-dark)}
+    .team-day-chip.today{border-color:var(--accent);color:var(--accent)}
+    .team-day-chip.today.active{background:#FFF3E0;border-color:var(--accent)}
     /* History detail modal */
     .history-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:center;justify-content:center;padding:16px}
     .history-modal-bg.show{display:flex}
@@ -486,6 +495,15 @@
       <button class="btn-cancel" onclick="closeEditModal()">キャンセル</button>
       <button class="btn-save" onclick="saveEdit()">保存</button>
     </div>
+  </div>
+</div>
+
+<!-- チーム履歴モーダル -->
+<div class="history-modal-bg" id="team-history-modal" onclick="closeTeamHistoryModal(event)">
+  <div class="history-modal" onclick="event.stopPropagation()">
+    <h3 id="team-history-title">📋 <span id="team-history-name"></span>の記録<button class="history-modal-close" onclick="closeTeamHistoryModal()">✕</button></h3>
+    <div class="team-day-tab" id="team-day-tabs"></div>
+    <div id="team-history-content"></div>
   </div>
 </div>
 
@@ -902,6 +920,7 @@ function renderTeam(){
           </span>
         </div>
       </div>
+      <button class="team-history-btn" onclick="openTeamHistory('${m.name.replace(/'/g,"\\'")}')">📋 過去の記録を見る</button>
     </div>`;
   }).join('');
   // カロリーランキング（摂取カロリーが少ない順）
@@ -1088,6 +1107,122 @@ window.showLightboxSrc=function(src){
   g('lightbox').classList.add('show');
 }
 
+// ===== TEAM HISTORY MODAL =====
+window.openTeamHistory=function(memberName){
+  const data=S.teamData[memberName];
+  if(!data){toast('⚠️ データがありません');return;}
+  g('team-history-name').textContent=memberName;
+
+  // 日付タブを作成（データがある日のリスト）
+  const logs=data.logs||[];
+  const walkLogs=data.walkLogs||{};
+  const allDates=new Set();
+  logs.forEach(l=>allDates.add(l.date));
+  Object.keys(walkLogs).forEach(d=>allDates.add(d));
+  const sortedDates=[...allDates].sort().reverse();
+
+  if(!sortedDates.length){
+    g('team-day-tabs').innerHTML='';
+    g('team-history-content').innerHTML='<div class="empty-state">記録がありません</div>';
+    g('team-history-modal').classList.add('show');
+    return;
+  }
+
+  const today=toDate(new Date());
+  g('team-day-tabs').innerHTML=sortedDates.map((date,i)=>{
+    const d=new Date(date+'T00:00:00');
+    const label=`${d.getMonth()+1}/${d.getDate()}（${'日月火水木金土'[d.getDay()]}）`;
+    const isToday=date===today;
+    return`<div class="team-day-chip${i===0?' active':''}${isToday?' today':''}" onclick="showTeamDay('${memberName.replace(/'/g,"\\'")}','${date}',this)">${isToday?'今日':label}</div>`;
+  }).join('');
+
+  // 最初の日付を表示
+  renderTeamDay(memberName,sortedDates[0],data);
+  g('team-history-modal').classList.add('show');
+}
+
+window.showTeamDay=function(memberName,dateStr,el){
+  document.querySelectorAll('.team-day-chip').forEach(c=>c.classList.remove('active'));
+  if(el)el.classList.add('active');
+  const data=S.teamData[memberName];
+  if(data)renderTeamDay(memberName,dateStr,data);
+}
+
+function renderTeamDay(memberName,dateStr,data){
+  const logs=(data.logs||[]).filter(l=>l.date===dateStr);
+  const walkLogs=data.walkLogs||{};
+  const steps=walkLogs[dateStr]||0;
+  const total=logs.reduce((s,l)=>s+(l.kcal||0),0);
+  const goal=data.goal||1600;
+  const over=total>goal;
+
+  let html='';
+
+  // カロリーサマリー
+  if(logs.length>0){
+    html+=`<div class="history-day-summary">
+      <div>
+        <div class="history-day-total" style="color:${over?'var(--danger)':'var(--primary-dark)'}">${total.toLocaleString()} kcal${over?' ⚠️':''}</div>
+        <div class="history-day-goal">目標 ${goal.toLocaleString()} kcal ／ ${logs.length}食</div>
+      </div>
+      <div style="font-size:.85rem;font-weight:700;color:${over?'var(--danger)':'var(--primary-dark)'}">
+        ${over?'超過 +'+Math.abs(goal-total):'残り '+(goal-total)} kcal
+      </div>
+    </div>`;
+  }
+
+  // 歩数
+  if(steps>0){
+    const wpct=Math.min(100,steps/8000*100);
+    html+=`<div class="history-walk-row">
+      <span>🚶</span>
+      <div class="history-walk-steps">${steps.toLocaleString()}歩</div>
+      <div class="history-walk-bar"><div class="history-walk-fill" style="width:${wpct}%"></div></div>
+      <span style="font-size:.75rem;color:var(--muted)">${steps>=8000?'🎉 達成！':'/ 8,000歩'}</span>
+    </div>`;
+  }
+
+  // 食事をタイプ別にグループ化
+  const mealOrder=['朝食','昼食','夕食','間食'];
+  const grouped={};
+  logs.forEach(l=>{if(!grouped[l.meal])grouped[l.meal]=[];grouped[l.meal].push(l);});
+
+  mealOrder.forEach(meal=>{
+    if(!grouped[meal])return;
+    const items=grouped[meal];
+    const mealTotal=items.reduce((s,l)=>s+(l.kcal||0),0);
+    html+=`<div class="history-meal-group">
+      <div class="history-meal-label">${items[0].emoji||'🍽️'} ${meal}（${mealTotal} kcal）</div>`;
+    items.forEach(l=>{
+      html+=`<div class="history-food-item">
+        ${l.thumb
+          ?`<img class="history-food-thumb" src="${l.thumb}" alt="${l.name}" onclick="showLightboxSrc(this.src)">`
+          :`<div class="history-food-icon">${l.emoji||'🍽️'}</div>`}
+        <div class="history-food-info">
+          <div class="history-food-name">${l.name}</div>
+          <div class="history-food-meta">⏰ ${l.time}</div>
+        </div>
+        <div class="history-food-kcal">${l.kcal!=null?l.kcal+' kcal':'--'}</div>
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+
+  if(!logs.length&&steps>0){
+    html+=`<div class="empty-state" style="padding:16px">食事の記録はありません</div>`;
+  }
+  if(!logs.length&&!steps){
+    html+=`<div class="empty-state" style="padding:16px">この日の記録はありません</div>`;
+  }
+
+  g('team-history-content').innerHTML=html;
+}
+
+window.closeTeamHistoryModal=function(e){
+  if(e&&e.target&&!e.target.classList.contains('history-modal-bg'))return;
+  g('team-history-modal').classList.remove('show');
+}
+
 // ===== SETTINGS =====
 window.saveProfile=function(){
   S.goal=parseInt(g('goal-kcal-input').value)||1600;
@@ -1175,10 +1310,10 @@ async function syncFB(){
     await set(S._ref(S.db,`rooms/${S.roomCode}/members/${S.userName}`),{
       goal:S.goal,lastSeen:Date.now(),
       walkLogs:walkLogsMonth,
-      // 今日の食事は画像あり、過去分は画像なし（容量節約）
+      // 過去7日分の食事ログ（画像含む）を同期
       logs:S.logs.filter(l=>l.date>=sevenDaysAgo).slice(-100).map(l=>({
         ...l,
-        thumb:l.date===today?(l.thumb||null):null
+        thumb:l.thumb||null
       }))
     });
   }catch(e){console.error('sync:',e);}
