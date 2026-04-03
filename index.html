@@ -159,6 +159,32 @@
     .lightbox.show{display:flex}
     .lightbox img{max-width:96vw;max-height:90vh;border-radius:8px;object-fit:contain}
     .lightbox-close{position:absolute;top:16px;right:20px;color:#fff;font-size:2rem;cursor:pointer;line-height:1;background:none;border:none}
+    /* History detail modal */
+    .history-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:center;justify-content:center;padding:16px}
+    .history-modal-bg.show{display:flex}
+    .history-modal{background:#fff;border-radius:20px;padding:20px;width:100%;max-width:400px;max-height:85vh;overflow-y:auto}
+    .history-modal h3{font-size:1rem;margin-bottom:14px;color:var(--primary-dark);display:flex;align-items:center;gap:8px}
+    .history-modal-close{margin-left:auto;background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted);padding:4px}
+    .history-day-summary{display:flex;justify-content:space-between;align-items:center;background:#F9FBE7;border-radius:10px;padding:10px 14px;margin-bottom:12px}
+    .history-day-total{font-size:1.2rem;font-weight:800}
+    .history-day-goal{font-size:.78rem;color:var(--muted)}
+    .history-meal-group{margin-bottom:10px}
+    .history-meal-label{font-size:.78rem;font-weight:700;color:var(--primary-dark);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+    .history-food-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5}
+    .history-food-item:last-child{border-bottom:none}
+    .history-food-thumb{width:60px;height:60px;border-radius:10px;object-fit:cover;cursor:pointer;flex-shrink:0}
+    .history-food-icon{width:60px;height:60px;border-radius:10px;background:#EEE;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0}
+    .history-food-info{flex:1;min-width:0}
+    .history-food-name{font-size:.88rem;font-weight:600}
+    .history-food-meta{font-size:.75rem;color:var(--muted);margin-top:2px}
+    .history-food-kcal{font-size:.88rem;font-weight:800;color:var(--accent);white-space:nowrap}
+    .history-walk-row{display:flex;align-items:center;gap:10px;background:#E3F2FD;border-radius:10px;padding:10px 14px;margin-bottom:12px}
+    .history-walk-steps{font-size:1rem;font-weight:800;color:var(--walk)}
+    .history-walk-bar{flex:1;height:8px;background:rgba(25,118,210,.15);border-radius:99px;overflow:hidden}
+    .history-walk-fill{height:100%;border-radius:99px;background:var(--walk)}
+    .month-day.has-data,.month-day.over-goal,.month-day.has-walk{cursor:pointer}
+    .month-day.has-data:active,.month-day.over-goal:active,.month-day.has-walk:active{opacity:.7}
+    .month-day.has-walk{background:#BBDEFB;font-weight:700}
     /* Misc */
     .spinner{display:inline-block;width:18px;height:18px;border:3px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:6px}
     @keyframes spin{to{transform:rotate(360deg)}}
@@ -460,6 +486,14 @@
       <button class="btn-cancel" onclick="closeEditModal()">キャンセル</button>
       <button class="btn-save" onclick="saveEdit()">保存</button>
     </div>
+  </div>
+</div>
+
+<!-- 履歴詳細モーダル -->
+<div class="history-modal-bg" id="history-modal" onclick="closeHistoryModal(event)">
+  <div class="history-modal" onclick="event.stopPropagation()">
+    <h3 id="history-modal-title">📅 <span id="history-modal-date"></span><button class="history-modal-close" onclick="closeHistoryModal()">✕</button></h3>
+    <div id="history-modal-content"></div>
   </div>
 </div>
 
@@ -935,9 +969,15 @@ function renderHistory(){
     const kcal=dk[str]||0;
     let cls='month-day';
     if(str===todayStr)cls+=' today';
+    const hasWalk=S.walkLogs[str]>0;
     if(kcal>0&&kcal<=S.goal)cls+=' has-data';
     else if(kcal>S.goal)cls+=' over-goal';
-    html+=`<div class="${cls}"${kcal>0?` title="${kcal}kcal"`:''}}>${d}</div>`;
+    else if(hasWalk)cls+=' has-walk';
+    const clickable=kcal>0||hasWalk;
+    const titleParts=[];
+    if(kcal>0)titleParts.push(kcal+'kcal');
+    if(hasWalk)titleParts.push(S.walkLogs[str]+'歩');
+    html+=`<div class="${cls}"${clickable?` onclick="openDayDetail('${str}')"`:''} ${titleParts.length?` title="${titleParts.join(' / ')}"`:''}>${d}</div>`;
   }
   g('month-grid').innerHTML=html;
 
@@ -951,17 +991,101 @@ function renderHistory(){
     const d=new Date(date+'T00:00:00');
     const label=`${d.getMonth()+1}/${d.getDate()}（${'日月火水木金土'[d.getDay()]}）`;
     const over=total>S.goal;
-    return`<div style="margin-bottom:12px">
+    const thumbs=logs.filter(l=>l.thumb).slice(0,4);
+    return`<div style="margin-bottom:14px;cursor:pointer" onclick="openDayDetail('${date}')">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <strong style="font-size:.88rem">${label}</strong>
         <span style="font-weight:800;color:${over?'var(--danger)':'var(--primary-dark)'}">${total.toLocaleString()} kcal${over?' ⚠️':''}</span>
       </div>
+      ${thumbs.length>0?`<div style="display:flex;gap:6px;margin-bottom:6px;overflow-x:auto">${thumbs.map(l=>`<img src="${l.thumb}" style="width:48px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0" alt="${l.name}">`).join('')}</div>`:''}
       <div class="progress-bar-wrap"><div class="progress-bar${over?' over':''}" style="width:${Math.min(100,Math.round(total/S.goal*100))}%"></div></div>
       <div style="font-size:.75rem;color:var(--muted);margin-top:3px">
         ${logs.map(l=>`${l.emoji}${l.name}${l.kcal!=null?`(${l.kcal}kcal)`:''}`).join(' / ')}
       </div>
     </div>`;
   }).join('');
+}
+
+// ===== HISTORY DETAIL MODAL =====
+window.openDayDetail=function(dateStr){
+  const d=new Date(dateStr+'T00:00:00');
+  const label=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${'日月火水木金土'[d.getDay()]}）`;
+  g('history-modal-date').textContent=label;
+
+  const logs=S.logs.filter(l=>l.date===dateStr);
+  const total=logs.reduce((s,l)=>s+(l.kcal||0),0);
+  const steps=S.walkLogs[dateStr]||0;
+  const over=total>S.goal;
+
+  let html='';
+
+  // カロリーサマリー
+  if(logs.length>0){
+    html+=`<div class="history-day-summary">
+      <div>
+        <div class="history-day-total" style="color:${over?'var(--danger)':'var(--primary-dark)'}">${total.toLocaleString()} kcal${over?' ⚠️':''}</div>
+        <div class="history-day-goal">目標 ${S.goal.toLocaleString()} kcal ／ ${logs.length}食</div>
+      </div>
+      <div style="font-size:.85rem;font-weight:700;color:${over?'var(--danger)':'var(--primary-dark)'}">
+        ${over?'超過 +'+Math.abs(S.goal-total):'残り '+(S.goal-total)} kcal
+      </div>
+    </div>`;
+  }
+
+  // 歩数
+  if(steps>0){
+    const wpct=Math.min(100,steps/8000*100);
+    html+=`<div class="history-walk-row">
+      <span>🚶</span>
+      <div class="history-walk-steps">${steps.toLocaleString()}歩</div>
+      <div class="history-walk-bar"><div class="history-walk-fill" style="width:${wpct}%"></div></div>
+      <span style="font-size:.75rem;color:var(--muted)">${steps>=8000?'🎉 達成！':'/ 8,000歩'}</span>
+    </div>`;
+  }
+
+  // 食事をタイプ別にグループ化
+  const mealOrder=['朝食','昼食','夕食','間食'];
+  const grouped={};
+  logs.forEach(l=>{if(!grouped[l.meal])grouped[l.meal]=[];grouped[l.meal].push(l);});
+
+  mealOrder.forEach(meal=>{
+    if(!grouped[meal])return;
+    const items=grouped[meal];
+    const mealTotal=items.reduce((s,l)=>s+(l.kcal||0),0);
+    html+=`<div class="history-meal-group">
+      <div class="history-meal-label">${items[0].emoji||'🍽️'} ${meal}（${mealTotal} kcal）</div>`;
+    items.forEach(l=>{
+      html+=`<div class="history-food-item">
+        ${l.thumb
+          ?`<img class="history-food-thumb" src="${l.thumb}" alt="${l.name}" onclick="showLightboxSrc(this.src)">`
+          :`<div class="history-food-icon">${l.emoji||'🍽️'}</div>`}
+        <div class="history-food-info">
+          <div class="history-food-name">${l.name}</div>
+          <div class="history-food-meta">⏰ ${l.time}</div>
+        </div>
+        <div class="history-food-kcal">${l.kcal!=null?l.kcal+' kcal':'--'}</div>
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+
+  if(!logs.length&&steps>0){
+    html+=`<div class="empty-state" style="padding:16px">食事の記録はありません</div>`;
+  }
+  if(!logs.length&&!steps){
+    html+=`<div class="empty-state" style="padding:16px">この日の記録はありません</div>`;
+  }
+
+  g('history-modal-content').innerHTML=html;
+  g('history-modal').classList.add('show');
+}
+window.closeHistoryModal=function(e){
+  if(e&&e.target&&!e.target.classList.contains('history-modal-bg'))return;
+  g('history-modal').classList.remove('show');
+}
+window.showLightboxSrc=function(src){
+  g('lightbox-img').src=src;
+  g('lightbox').classList.add('show');
 }
 
 // ===== SETTINGS =====
