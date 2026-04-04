@@ -539,15 +539,83 @@ const S={
   editingId:null
 };
 
-// ===== STORAGE =====
-function load(){
+// ===== STORAGE (IndexedDB for images + localStorage for metadata) =====
+// IndexedDB: 画像を大容量ストレージに保存（50MB+）
+// localStorage: メタデータのみ保存（軽量・高速）
+let idb=null;
+function openIDB(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open('diet_images',1);
+    req.onupgradeneeded=e=>{e.target.result.createObjectStore('thumbs');};
+    req.onsuccess=e=>{idb=e.target.result;resolve(idb);};
+    req.onerror=e=>{console.error('IDB open error:',e);resolve(null);};
+  });
+}
+function idbPut(key,val){
+  if(!idb)return Promise.resolve();
+  return new Promise(r=>{
+    try{const tx=idb.transaction('thumbs','readwrite');tx.objectStore('thumbs').put(val,key);tx.oncomplete=()=>r();tx.onerror=()=>r();}catch(e){r();}
+  });
+}
+function idbGet(key){
+  if(!idb)return Promise.resolve(null);
+  return new Promise(r=>{
+    try{const tx=idb.transaction('thumbs','readonly');const req=tx.objectStore('thumbs').get(key);req.onsuccess=()=>r(req.result||null);req.onerror=()=>r(null);}catch(e){r(null);}
+  });
+}
+function idbGetAll(){
+  if(!idb)return Promise.resolve({});
+  return new Promise(r=>{
+    try{
+      const tx=idb.transaction('thumbs','readonly');
+      const store=tx.objectStore('thumbs');
+      const req=store.openCursor();
+      const result={};
+      req.onsuccess=e=>{const c=e.target.result;if(c){result[c.key]=c.value;c.continue();}else r(result);};
+      req.onerror=()=>r(result);
+    }catch(e){r({});}
+  });
+}
+
+// 画像をIndexedDBに保存し、logsからthumbを分離
+async function saveThumb(logId,thumbData){
+  if(!thumbData)return;
+  await idbPut('thumb_'+logId,thumbData);
+}
+async function loadThumbs(){
+  const all=await idbGetAll();
+  S.logs.forEach(l=>{
+    const key='thumb_'+l.id;
+    if(all[key])l.thumb=all[key];
+  });
+}
+
+async function load(){
   try{
-    const s=JSON.parse(localStorage.getItem('diet_v3')||'{}');
+    const s=JSON.parse(localStorage.getItem('diet_v4')||localStorage.getItem('diet_v3')||'{}');
     S.logs=s.logs||[];S.goal=s.goal||1600;S.userName=s.userName||'';
     S.apiKey=s.apiKey||'';S.proxyUrl=s.proxyUrl||'';
     S.roomCode=s.roomCode||'';S.firebaseCfg=s.firebaseCfg||'';
     S.walkLogs=s.walkLogs||{};
-  }catch(e){}
+  }catch(e){console.error('load error:',e);}
+
+  // v3→v4マイグレーション: 既存のthumbをIndexedDBに移行
+  await openIDB();
+  let migrated=false;
+  for(const l of S.logs){
+    if(l.thumb&&typeof l.thumb==='string'&&l.thumb.startsWith('data:')){
+      await saveThumb(l.id,l.thumb);
+      migrated=true;
+    }
+  }
+  // IndexedDBから画像を読み込み
+  await loadThumbs();
+  // マイグレーション後、localStorageからthumbを除去して保存
+  if(migrated||!localStorage.getItem('diet_v4')){
+    save();
+    localStorage.removeItem('diet_v3');
+  }
+
   g('goal-kcal-input').value=S.goal;
   g('user-name-input').value=S.userName;
   g('api-key-input').value=S.apiKey;
@@ -556,13 +624,24 @@ function load(){
   g('firebase-cfg-input').value=S.firebaseCfg;
   updateHeader();
 }
+
 function save(){
-  localStorage.setItem('diet_v3',JSON.stringify({
-    logs:S.logs,goal:S.goal,userName:S.userName,
-    apiKey:S.apiKey,proxyUrl:S.proxyUrl,
-    roomCode:S.roomCode,firebaseCfg:S.firebaseCfg,
-    walkLogs:S.walkLogs
-  }));
+  try{
+    // localStorageにはthumbなしのメタデータのみ保存（軽量）
+    const logsClean=S.logs.map(l=>({
+      id:l.id,date:l.date,time:l.time,meal:l.meal,emoji:l.emoji,
+      name:l.name,kcal:l.kcal,hasThumb:!!l.thumb
+    }));
+    localStorage.setItem('diet_v4',JSON.stringify({
+      logs:logsClean,goal:S.goal,userName:S.userName,
+      apiKey:S.apiKey,proxyUrl:S.proxyUrl,
+      roomCode:S.roomCode,firebaseCfg:S.firebaseCfg,
+      walkLogs:S.walkLogs
+    }));
+  }catch(e){
+    console.error('save error:',e);
+    toast('⚠️ 保存エラー：ストレージ容量不足の可能性があります');
+  }
 }
 
 // ===== UTILS =====
@@ -616,22 +695,24 @@ window.handleFileSelect=function(event){
 }
 
 // ===== ADD MANUAL =====
-window.addManual=function(){
+window.addManual=async function(){
   const name=g('manual-name').value.trim();
   const kcalVal=g('manual-kcal').value;
   const kcal=kcalVal?parseInt(kcalVal):null;
-  // 画像か食品名のどちらかあれば登録OK
   if(!name&&!S.imgB64){toast('⚠️ 食品名または写真が必要です');return;}
   const now=new Date();
-  S.logs.push({
-    id:Date.now(),date:toDate(now),time:now.toTimeString().slice(0,5),
+  const logId=Date.now();
+  const entry={
+    id:logId,date:toDate(now),time:now.toTimeString().slice(0,5),
     meal:S.meal,emoji:S.mealEmoji,
     name:name||(S.imgB64?'写真の食事':'食事'),
     kcal,thumb:S.imgB64
-  });
+  };
+  S.logs.push(entry);
+  // 画像をIndexedDBに保存
+  if(S.imgB64)await saveThumb(logId,S.imgB64);
   save();syncFB();
   toast(`✅ ${S.meal}を記録しました${kcal?`（${kcal} kcal）`:''}`);
-  // フォームリセット＆トップへ
   g('manual-name').value='';g('manual-kcal').value='';
   g('preview-wrap').style.display='none';
   g('file-input-camera').value='';g('file-input-library').value='';S.imgB64=null;
@@ -733,14 +814,17 @@ window.removeEditImg=function(){
   g('edit-img-preview').src='';g('edit-img-preview').style.display='none';
   g('edit-img-del-btn').style.display='none';
 }
-window.saveEdit=function(){
+window.saveEdit=async function(){
   const log=S.logs.find(l=>l.id===S.editingId);if(!log)return;
   log.name=g('edit-name').value.trim()||log.name;
   const k=g('edit-kcal').value;
   log.kcal=k?parseInt(k):null;
   const activeBtn=document.querySelector('.edit-meal-btn.active');
   if(activeBtn){log.meal=activeBtn.dataset.meal;log.emoji=activeBtn.dataset.emoji;}
-  if(S.editingThumb!==undefined)log.thumb=S.editingThumb;
+  if(S.editingThumb!==undefined){
+    log.thumb=S.editingThumb;
+    if(S.editingThumb)await saveThumb(log.id,S.editingThumb);
+  }
   save();syncFB();closeEditModal();renderToday();toast('✅ 編集しました');
 }
 // ライトボックス
@@ -920,7 +1004,21 @@ function renderTeam(){
   const today=toDate(new Date());
   const now=new Date();
   const monthStr=`${now.getFullYear()}-${p2(now.getMonth()+1)}`;
-  const members=Object.entries(S.teamData).map(([name,data])=>{
+
+  // 自分のデータをローカルS.logsから常に最新で構築（Firebase待ちなしで反映）
+  const myData={};
+  if(S.userName){
+    const myWalkMonth={};
+    Object.entries(S.walkLogs).forEach(([d,v])=>{if(d.startsWith(monthStr))myWalkMonth[d]=v;});
+    myData[S.userName]={
+      goal:S.goal,lastSeen:Date.now(),
+      walkLogs:myWalkMonth,
+      logs:S.logs
+    };
+  }
+  // Firebaseのデータとマージ（自分のデータはローカル優先）
+  const merged={...S.teamData,...myData};
+  const members=Object.entries(merged).map(([name,data])=>{
     const todayLogs=(data.logs||[]).filter(l=>l.date===today);
     const kcal=todayLogs.reduce((s,l)=>s+(l.kcal||0),0);
     const goal=data.goal||1600;
@@ -1398,9 +1496,14 @@ document.addEventListener('touchend',function(e){
 },{passive:false});
 
 // ===== INIT =====
-load();
-initWalkDate();
-if(S.firebaseCfg&&S.roomCode&&S.userName){initFB(S.firebaseCfg,S.roomCode).then(ok=>{if(ok)syncFB();});}
+(async()=>{
+  await load();
+  initWalkDate();
+  if(S.firebaseCfg&&S.roomCode&&S.userName){
+    const ok=await initFB(S.firebaseCfg,S.roomCode);
+    if(ok)syncFB();
+  }
+})();
 </script>
 </body>
 </html>
