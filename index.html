@@ -261,17 +261,7 @@
       <span style="font-size:.85rem;color:var(--muted)">kcal</span>
     </div>
     <div style="font-size:.75rem;color:var(--muted);margin-bottom:8px">※写真または食品名があれば登録できます</div>
-    <button class="btn-add" id="btn-add-meal" onclick="addManual()">✅ 食事ログに追加</button>
-    <div id="add-success" style="display:none;margin-top:12px;text-align:center">
-      <div style="background:#E8F5E9;border-radius:12px;padding:14px;margin-bottom:10px">
-        <div style="font-size:1.3rem;margin-bottom:4px">✅</div>
-        <div id="add-success-msg" style="font-size:.88rem;font-weight:700;color:var(--primary-dark)"></div>
-      </div>
-      <div style="display:flex;gap:8px">
-        <button onclick="continueRecording()" style="flex:1;padding:12px;border:2px solid var(--primary);border-radius:12px;background:#fff;color:var(--primary-dark);font-size:.88rem;font-weight:700;cursor:pointer">🍽️ 続けて記録</button>
-        <button onclick="showPage('today')" style="flex:1;padding:12px;border:none;border-radius:12px;background:var(--primary);color:#fff;font-size:.88rem;font-weight:700;cursor:pointer">📊 今日の記録へ</button>
-      </div>
-    </div>
+    <button class="btn-add" onclick="addManual()">✅ 食事ログに追加</button>
   </div>
 </div>
 
@@ -640,19 +630,11 @@ window.addManual=function(){
     kcal,thumb:S.imgB64
   });
   save();syncFB();
+  toast(`✅ ${S.meal}を記録しました${kcal?`（${kcal} kcal）`:''}`);
+  // フォームリセット＆トップへ
   g('manual-name').value='';g('manual-kcal').value='';
   g('preview-wrap').style.display='none';
   g('file-input-camera').value='';g('file-input-library').value='';S.imgB64=null;
-  // 保存完了表示
-  const msg=`${S.mealEmoji} ${S.meal}を記録しました${kcal?`（${kcal} kcal）`:''}`;
-  g('add-success-msg').textContent=msg;
-  g('btn-add-meal').style.display='none';
-  g('add-success').style.display='block';
-  g('add-success').scrollIntoView({behavior:'smooth',block:'center'});
-}
-window.continueRecording=function(){
-  g('add-success').style.display='none';
-  g('btn-add-meal').style.display='block';
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -1057,22 +1039,26 @@ function renderHistory(){
   const now=new Date(),year=now.getFullYear(),month=now.getMonth();
   g('month-label').textContent=`${year}年${month+1}月`;
   const firstDay=new Date(year,month,1).getDay(),lastDate=new Date(year,month+1,0).getDate();
-  const todayStr=toDate(now),dk={};
-  S.logs.filter(l=>l.date.startsWith(`${year}-${p2(month+1)}`)).forEach(l=>{dk[l.date]=(dk[l.date]||0)+(l.kcal||0);});
+  const todayStr=toDate(now),dk={},dc={};
+  S.logs.filter(l=>l.date.startsWith(`${year}-${p2(month+1)}`)).forEach(l=>{
+    dk[l.date]=(dk[l.date]||0)+(l.kcal||0);
+    dc[l.date]=(dc[l.date]||0)+1; // 食事数カウント
+  });
   let html=['日','月','火','水','木','金','土'].map(h=>`<div class="month-head">${h}</div>`).join('');
   for(let i=0;i<firstDay;i++)html+='<div class="month-day empty"></div>';
   for(let d=1;d<=lastDate;d++){
     const str=`${year}-${p2(month+1)}-${p2(d)}`;
     const kcal=dk[str]||0;
+    const hasLog=(dc[str]||0)>0;
     let cls='month-day';
     if(str===todayStr)cls+=' today';
     const hasWalk=S.walkLogs[str]>0;
-    if(kcal>0&&kcal<=S.goal)cls+=' has-data';
-    else if(kcal>S.goal)cls+=' over-goal';
+    if(kcal>S.goal)cls+=' over-goal';
+    else if(hasLog||kcal>0)cls+=' has-data';
     else if(hasWalk)cls+=' has-walk';
-    const clickable=kcal>0||hasWalk;
+    const clickable=hasLog||kcal>0||hasWalk;
     const titleParts=[];
-    if(kcal>0)titleParts.push(kcal+'kcal');
+    if(hasLog)titleParts.push(kcal>0?kcal+'kcal':'記録あり');
     if(hasWalk)titleParts.push(S.walkLogs[str]+'歩');
     html+=`<div class="${cls}"${clickable?` onclick="openDayDetail('${str}')"`:''} ${titleParts.length?` title="${titleParts.join(' / ')}"`:''}>${d}</div>`;
   }
