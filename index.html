@@ -11,14 +11,14 @@
   <meta name="theme-color" content="#388E3C">
   <style>
     :root{--primary:#4CAF50;--primary-dark:#388E3C;--accent:#FF7043;--bg:#F1F8E9;--card:#FFF;--text:#2E3A23;--muted:#78909C;--border:#E0E0E0;--warning:#FF9800;--danger:#F44336;--walk:#1976D2;--shadow:0 2px 12px rgba(0,0,0,0.08)}
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,'Hiragino Sans','Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-tap-highlight-color:transparent}
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:rgba(0,0,0,.05)}
+    body{font-family:-apple-system,'Hiragino Sans','Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;touch-action:manipulation}
     header{background:linear-gradient(135deg,var(--primary-dark),var(--primary));color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.15);position:sticky;top:0;z-index:100}
     header h1{font-size:1.2rem;font-weight:700}
     header .subtitle{font-size:.78rem;opacity:.85}
     nav{display:flex;background:#fff;border-bottom:2px solid var(--border);overflow-x:auto;position:sticky;top:52px;z-index:99}
     nav::-webkit-scrollbar{display:none}
-    nav button{flex:1;padding:10px 4px;border:none;background:none;cursor:pointer;font-size:.70rem;color:var(--muted);white-space:nowrap;border-bottom:3px solid transparent;font-weight:600;min-width:50px}
+    nav button{flex:1;padding:10px 4px;border:none;background:none;cursor:pointer;font-size:.70rem;color:var(--muted);white-space:nowrap;border-bottom:3px solid transparent;font-weight:600;min-width:50px;-webkit-user-select:none;user-select:none}
     nav button.active{color:var(--primary-dark);border-bottom-color:var(--primary)}
     .page{display:none;padding:12px;max-width:600px;margin:0 auto;padding-bottom:40px}
     .page.active{display:block}
@@ -35,7 +35,7 @@
     #preview-img{width:100%;max-height:220px;object-fit:cover;border-radius:12px;display:block}
     .btn-add{width:100%;margin-top:10px;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:.95rem;font-weight:700;cursor:pointer}
     .meal-type-selector{display:flex;gap:6px;margin-bottom:12px}
-    .meal-btn{flex:1;padding:8px 4px;border:2px solid var(--border);border-radius:10px;background:#fff;cursor:pointer;font-size:.75rem;text-align:center;font-weight:600}
+    .meal-btn{flex:1;padding:8px 4px;border:2px solid var(--border);border-radius:10px;background:#fff;cursor:pointer;font-size:.75rem;text-align:center;font-weight:600;-webkit-user-select:none;user-select:none}
     .meal-btn.active{border-color:var(--primary);background:#F1F8E9;color:var(--primary-dark)}
     /* Calorie ring */
     .calorie-ring{display:flex;justify-content:center;margin:8px 0}
@@ -75,7 +75,7 @@
     /* Month */
     .month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
     .month-head{font-size:.68rem;color:var(--muted);padding:3px 0;font-weight:700}
-    .month-day{font-size:.72rem;padding:5px 1px;border-radius:6px}
+    .month-day{font-size:.72rem;padding:5px 1px;border-radius:6px;-webkit-user-select:none;user-select:none}
     .month-day.has-data{background:#DCEDC8;font-weight:700}
     .month-day.over-goal{background:#FFCCBC;font-weight:700}
     .month-day.today{outline:2px solid var(--primary)}
@@ -131,7 +131,7 @@
     .walk-day-emoji{font-size:1rem;min-width:20px;text-align:center}
     .walk-calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px}
     .walk-cal-head{font-size:.65rem;color:var(--muted);text-align:center;font-weight:700;padding:2px}
-    .walk-cal-day{font-size:.68rem;padding:6px 2px;border-radius:6px;text-align:center;position:relative}
+    .walk-cal-day{font-size:.68rem;padding:6px 2px;border-radius:6px;text-align:center;position:relative;-webkit-user-select:none;user-select:none}
     .walk-cal-day.empty{color:#CCC}
     .walk-cal-day.has-steps{background:#BBDEFB;font-weight:700;color:#1565C0}
     .walk-cal-day.goal-met{background:#1976D2;color:#fff;font-weight:700}
@@ -159,13 +159,13 @@
     .lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:999;align-items:center;justify-content:center}
     .lightbox.show{display:flex}
     .lightbox img{max-width:96vw;max-height:90vh;border-radius:8px;object-fit:contain}
-    .lightbox-close{position:absolute;top:16px;right:20px;color:#fff;font-size:2rem;cursor:pointer;line-height:1;background:none;border:none}
+    .lightbox-close{position:absolute;top:12px;right:12px;color:#fff;font-size:2rem;cursor:pointer;line-height:1;background:none;border:none;padding:12px;min-width:48px;min-height:48px}
     /* Team history */
     .team-history-btn{display:block;width:100%;margin-top:8px;padding:8px;border:1px solid var(--primary);border-radius:8px;background:#F9FBE7;color:var(--primary-dark);font-size:.78rem;font-weight:700;cursor:pointer;text-align:center}
     .team-history-btn:active{background:#DCEDC8}
     .team-day-tab{display:flex;gap:4px;overflow-x:auto;padding:4px 0;margin-bottom:12px}
     .team-day-tab::-webkit-scrollbar{display:none}
-    .team-day-chip{padding:6px 10px;border-radius:99px;border:1.5px solid var(--border);background:#fff;font-size:.72rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
+    .team-day-chip{padding:6px 10px;border-radius:99px;border:1.5px solid var(--border);background:#fff;font-size:.72rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;-webkit-user-select:none;user-select:none}
     .team-day-chip.active{border-color:var(--primary);background:#F1F8E9;color:var(--primary-dark)}
     .team-day-chip.today{border-color:var(--accent);color:var(--accent)}
     .team-day-chip.today.active{background:#FFF3E0;border-color:var(--accent)}
@@ -174,7 +174,7 @@
     .history-modal-bg.show{display:flex}
     .history-modal{background:#fff;border-radius:20px;padding:20px;width:100%;max-width:400px;max-height:85vh;overflow-y:auto}
     .history-modal h3{font-size:1rem;margin-bottom:14px;color:var(--primary-dark);display:flex;align-items:center;gap:8px}
-    .history-modal-close{margin-left:auto;background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted);padding:4px}
+    .history-modal-close{margin-left:auto;background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--muted);padding:8px;min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center}
     .history-day-summary{display:flex;justify-content:space-between;align-items:center;background:#F9FBE7;border-radius:10px;padding:10px 14px;margin-bottom:12px}
     .history-day-total{font-size:1.2rem;font-weight:800}
     .history-day-goal{font-size:.78rem;color:var(--muted)}
@@ -1382,6 +1382,20 @@ async function syncFB(){
     });
   }catch(e){console.error('sync:',e);}
 }
+
+// ===== MOBILE TAP FIX =====
+// iOS Safariでdiv等の非インタラクティブ要素のonclickが発火しない問題を修正
+// touchendでonclick属性を手動実行する
+document.addEventListener('touchend',function(e){
+  const el=e.target.closest('[onclick]');
+  if(!el)return;
+  // button/a/input要素は標準のclickイベントに任せる
+  const tag=el.tagName.toLowerCase();
+  if(tag==='button'||tag==='a'||tag==='input')return;
+  // div等の非標準要素はtouchendでonclickを発火
+  e.preventDefault();
+  el.click();
+},{passive:false});
 
 // ===== INIT =====
 load();
