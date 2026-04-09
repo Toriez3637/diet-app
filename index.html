@@ -226,6 +226,20 @@
 <!-- 📸 記録 -->
 <div id="page-record" class="page active">
   <div class="card">
+    <h2>📅 記録する日付</h2>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="date" id="record-date-input"
+        style="flex:1;border:2px solid var(--primary);border-radius:10px;padding:10px;font-size:.9rem;text-align:center;color:var(--text)">
+      <button onclick="setRecordDateToday()" style="padding:8px 12px;border:1px solid var(--primary);border-radius:10px;background:#F9FBE7;color:var(--primary-dark);font-size:.78rem;font-weight:700;cursor:pointer;white-space:nowrap">今日</button>
+    </div>
+    <div id="record-date-label" style="text-align:center;font-size:.82rem;font-weight:700;color:var(--primary-dark);margin-top:6px"></div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+      <span style="font-size:.82rem;color:var(--muted)">時刻：</span>
+      <input type="time" id="record-time-input"
+        style="flex:1;border:1px solid var(--border);border-radius:8px;padding:8px;font-size:.88rem;text-align:center;color:var(--text)">
+    </div>
+  </div>
+  <div class="card">
     <h2>🍽️ 食事タイプ</h2>
     <div class="meal-type-selector">
       <div class="meal-btn active" onclick="selectMeal('朝食','🌅',this)">🌅<br>朝食</div>
@@ -346,9 +360,13 @@
     <button class="save-btn" style="background:var(--walk);margin-top:10px" onclick="saveStepsForDate()">👟 記録する</button>
   </div>
 
-  <!-- 今月のカレンダー -->
+  <!-- カレンダー -->
   <div class="card">
-    <h2>📅 今月の歩数カレンダー</h2>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <button onclick="changeWalkMonth(-1)" style="padding:6px 12px;border:1px solid var(--walk);border-radius:8px;background:#E3F2FD;color:var(--walk);font-size:.9rem;font-weight:700;cursor:pointer">◀</button>
+      <h2 style="margin:0" id="walk-cal-title">📅 歩数カレンダー</h2>
+      <button onclick="changeWalkMonth(1)" id="walk-month-next" style="padding:6px 12px;border:1px solid var(--walk);border-radius:8px;background:#E3F2FD;color:var(--walk);font-size:.9rem;font-weight:700;cursor:pointer">▶</button>
+    </div>
     <div class="walk-calendar" id="walk-calendar"></div>
     <div style="margin-top:10px;font-size:.75rem;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap">
       <span>🟦 歩数あり</span>
@@ -457,6 +475,11 @@
     </div>
     <button class="save-btn" onclick="saveFirebase()" id="firebase-save-btn">🔗 Firebase接続</button>
     <div id="firebase-status" style="margin-top:8px;font-size:.80rem;text-align:center;color:var(--muted)"></div>
+  </div>
+  <div class="card" id="member-manage-card" style="display:none">
+    <h2>👥 メンバー管理</h2>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:10px">チームメンバーを削除できます。削除するとそのメンバーのデータがチームから消えます。</div>
+    <div id="member-manage-list"><div class="empty-state">接続中...</div></div>
   </div>
   <div class="card">
     <h2>📱 スマホへの追加方法</h2>
@@ -695,15 +718,39 @@ window.handleFileSelect=function(event){
 }
 
 // ===== ADD MANUAL =====
+window.setRecordDateToday=function(){
+  const today=toDate(new Date());
+  g('record-date-input').value=today;
+  g('record-time-input').value=new Date().toTimeString().slice(0,5);
+  updateRecordDateLabel();
+}
+function initRecordDate(){
+  const now=new Date();
+  const today=toDate(now);
+  const el=g('record-date-input');
+  el.value=today;
+  el.max=today;
+  g('record-time-input').value=now.toTimeString().slice(0,5);
+  updateRecordDateLabel();
+  el.addEventListener('change',updateRecordDateLabel);
+}
+function updateRecordDateLabel(){
+  const el=g('record-date-input');
+  const d=new Date(el.value+'T00:00:00');
+  const today=toDate(new Date());
+  const label=el.value===today?'📅 今日の記録':`📅 ${d.getMonth()+1}/${d.getDate()}（${'日月火水木金土'[d.getDay()]}）の記録`;
+  g('record-date-label').innerHTML=label;
+}
 window.addManual=async function(){
   const name=g('manual-name').value.trim();
   const kcalVal=g('manual-kcal').value;
   const kcal=kcalVal?parseInt(kcalVal):null;
   if(!name&&!S.imgB64){toast('⚠️ 食品名または写真が必要です');return;}
-  const now=new Date();
+  const recordDate=g('record-date-input').value||toDate(new Date());
+  const recordTime=g('record-time-input').value||new Date().toTimeString().slice(0,5);
   const logId=Date.now();
   const entry={
-    id:logId,date:toDate(now),time:now.toTimeString().slice(0,5),
+    id:logId,date:recordDate,time:recordTime,
     meal:S.meal,emoji:S.mealEmoji,
     name:name||(S.imgB64?'写真の食事':'食事'),
     kcal,thumb:S.imgB64
@@ -712,7 +759,9 @@ window.addManual=async function(){
   // 画像をIndexedDBに保存
   if(S.imgB64)await saveThumb(logId,S.imgB64);
   save();syncFB();
-  toast(`✅ ${S.meal}を記録しました${kcal?`（${kcal} kcal）`:''}`);
+  const today=toDate(new Date());
+  const dateLabel=recordDate===today?'今日':recordDate.slice(5).replace('-','/');
+  toast(`✅ ${dateLabel}の${S.meal}を記録しました${kcal?`（${kcal} kcal）`:''}`);
   g('manual-name').value='';g('manual-kcal').value='';
   g('preview-wrap').style.display='none';
   g('file-input-camera').value='';g('file-input-library').value='';S.imgB64=null;
@@ -849,6 +898,19 @@ window.closeLightbox=function(){
 }
 
 // ===== WALKING =====
+let walkCalYear=new Date().getFullYear();
+let walkCalMonth=new Date().getMonth();
+window.changeWalkMonth=function(delta){
+  const now=new Date();
+  walkCalMonth+=delta;
+  if(walkCalMonth<0){walkCalMonth=11;walkCalYear--;}
+  if(walkCalMonth>11){walkCalMonth=0;walkCalYear++;}
+  // 未来の月には進めない
+  if(walkCalYear>now.getFullYear()||(walkCalYear===now.getFullYear()&&walkCalMonth>now.getMonth())){
+    walkCalYear=now.getFullYear();walkCalMonth=now.getMonth();return;
+  }
+  renderWalk();
+}
 function initWalkDate(){
   const el=g('walk-date-input');
   const today=toDate(new Date());
@@ -905,8 +967,7 @@ window.saveStepsForDate=function(){
 }
 
 function getMonthWalkData(){
-  const now=new Date();
-  const year=now.getFullYear(),month=now.getMonth();
+  const year=walkCalYear,month=walkCalMonth;
   const days={};
   Object.entries(S.walkLogs).forEach(([date,steps])=>{
     const d=new Date(date+'T00:00:00');
@@ -939,6 +1000,12 @@ function renderWalk(){
   if(!dateInput.value)dateInput.value=todayStr;
   dateInput.max=todayStr;
   updateWalkDateLabel();
+
+  // カレンダータイトル更新
+  const now=new Date();
+  const isCurrentMonth=(year===now.getFullYear()&&month===now.getMonth());
+  g('walk-cal-title').textContent=`📅 ${year}年${month+1}月の歩数`;
+  g('walk-month-next').style.visibility=isCurrentMonth?'hidden':'visible';
 
   // カレンダー
   const firstDay=new Date(year,month,1).getDay();
@@ -1425,7 +1492,34 @@ window.leaveTeam=async function(){
   g('room-code-input').value='';
   g('firebase-cfg-input').value='';
   g('firebase-status').textContent='';
-  save();renderTeam();toast('🚪 チームから離脱しました');
+  save();renderTeam();renderMemberManage();toast('🚪 チームから離脱しました');
+}
+function renderMemberManage(){
+  const card=g('member-manage-card');
+  if(!S.db||!S.roomCode){card.style.display='none';return;}
+  card.style.display='block';
+  const listEl=g('member-manage-list');
+  const members=Object.keys(S.teamData);
+  if(!members.length){listEl.innerHTML='<div class="empty-state">メンバーがいません</div>';return;}
+  listEl.innerHTML=members.map(name=>{
+    const isSelf=name===S.userName;
+    return`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:32px;height:32px;border-radius:50%;background:${isSelf?'var(--primary)':'#E0E0E0'};color:${isSelf?'#fff':'var(--text)'};display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700">${name.slice(0,1)}</div>
+        <span style="font-weight:600;font-size:.88rem">${name}</span>
+        ${isSelf?'<span style="font-size:.65rem;background:var(--primary);color:#fff;padding:1px 6px;border-radius:8px">自分</span>':''}
+      </div>
+      ${isSelf?'':`<button onclick="removeMember('${name.replace(/'/g,"\\'")}')" style="padding:5px 10px;background:none;border:1px solid var(--danger);border-radius:8px;color:var(--danger);font-size:.75rem;font-weight:700;cursor:pointer">🗑 削除</button>`}
+    </div>`;
+  }).join('');
+}
+window.removeMember=async function(name){
+  if(!confirm(`「${name}」をチームから削除しますか？\nこの操作は元に戻せません。`))return;
+  try{
+    const{ref,remove}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
+    await remove(ref(S.db,`rooms/${S.roomCode}/members/${name}`));
+    toast(`🗑️ ${name}をチームから削除しました`);
+  }catch(e){console.error('removeMember:',e);toast('❌ 削除に失敗しました');}
 }
 window.saveFirebase=async function(){
   const cfgStr=g('firebase-cfg-input').value.trim();
@@ -1434,7 +1528,7 @@ window.saveFirebase=async function(){
   if(!S.userName){toast('⚠️ まずお名前を設定してください');return;}
   g('firebase-status').textContent='🔄 接続中...';
   const ok=await initFB(cfgStr,room);
-  if(ok){S.roomCode=room;S.firebaseCfg=cfgStr;save();syncFB();toast('🔗 チームと接続しました！');}
+  if(ok){S.roomCode=room;S.firebaseCfg=cfgStr;save();syncFB();renderMemberManage();toast('🔗 チームと接続しました！');}
 }
 window.resetData=function(){
   if(!confirm('全ての記録を削除しますか？'))return;
@@ -1451,7 +1545,7 @@ async function initFB(cfgStr,room){
     if(!cfg.databaseURL)throw new Error('databaseURLが必要です');
     const app=initializeApp(cfg);S.db=getDatabase(app);S._ref=ref;S._set=set;
     const roomRef=ref(S.db,`rooms/${room}/members`);
-    onValue(roomRef,snap=>{S.teamData=snap.val()||{};renderTeam();});
+    onValue(roomRef,snap=>{S.teamData=snap.val()||{};renderTeam();renderMemberManage();});
     g('firebase-status').textContent='✅ 接続成功！';g('firebase-status').style.color='var(--primary-dark)';
     return true;
   }catch(e){
@@ -1498,6 +1592,7 @@ document.addEventListener('touchend',function(e){
 // ===== INIT =====
 (async()=>{
   await load();
+  initRecordDate();
   initWalkDate();
   if(S.firebaseCfg&&S.roomCode&&S.userName){
     const ok=await initFB(S.firebaseCfg,S.roomCode);
