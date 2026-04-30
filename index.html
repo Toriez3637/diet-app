@@ -202,9 +202,42 @@
     .toast.show{transform:translateX(-50%) translateY(0)}
     .empty-state{text-align:center;padding:28px;color:var(--muted);font-size:.88rem}
     .badge{display:inline-block;background:var(--primary);color:#fff;border-radius:99px;padding:2px 8px;font-size:.72rem;font-weight:700}
+    /* Login overlay */
+    .login-overlay{position:fixed;inset:0;background:linear-gradient(135deg,var(--primary-dark),var(--primary));display:flex;align-items:center;justify-content:center;padding:20px;z-index:9999}
+    .login-overlay.hidden{display:none}
+    .login-card{background:#fff;border-radius:20px;padding:28px 24px;width:100%;max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+    .login-card .login-emoji{font-size:3rem;text-align:center;margin-bottom:6px}
+    .login-card h1{font-size:1.3rem;color:var(--primary-dark);text-align:center;margin-bottom:4px}
+    .login-card .login-sub{font-size:.82rem;color:var(--muted);text-align:center;margin-bottom:18px}
+    .login-card label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px;font-weight:600}
+    .login-card input{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:11px 12px;font-size:.95rem;margin-bottom:12px;-webkit-appearance:none}
+    .login-card input:focus{outline:none;border-color:var(--primary)}
+    .login-card .login-btn{width:100%;padding:13px;background:var(--primary);color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:4px}
+    .login-card .login-btn:disabled{opacity:.6;cursor:wait}
+    .login-card .login-btn:active{background:var(--primary-dark)}
+    .login-error{font-size:.82rem;color:var(--danger);text-align:center;margin-top:10px;min-height:1.2em}
+    .login-info{font-size:.72rem;color:var(--muted);text-align:center;margin-top:14px;line-height:1.5}
   </style>
 </head>
 <body>
+
+<!-- ログインオーバーレイ -->
+<div id="login-overlay" class="login-overlay">
+  <div class="login-card">
+    <div class="login-emoji">🥗</div>
+    <h1>ダイエットサポート</h1>
+    <div class="login-sub">メンバー専用</div>
+    <form id="login-form" onsubmit="return doLogin(event)">
+      <label for="login-email">メールアドレス</label>
+      <input type="email" id="login-email" autocomplete="username" required inputmode="email">
+      <label for="login-password">パスワード</label>
+      <input type="password" id="login-password" autocomplete="current-password" required>
+      <button type="submit" class="login-btn" id="login-btn">ログイン</button>
+    </form>
+    <div class="login-error" id="login-error"></div>
+    <div class="login-info">パスワードを忘れた場合は管理者に連絡してください</div>
+  </div>
+</div>
 
 <header>
   <div style="font-size:1.8rem">🥗</div>
@@ -393,8 +426,7 @@
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
         <span style="font-size:.85rem;color:var(--muted)">グループ：</span>
         <strong id="team-room-display" style="letter-spacing:2px;color:var(--primary-dark)"></strong>
-        <button onclick="leaveTeam()" style="margin-left:auto;padding:5px 12px;background:none;border:1px solid var(--danger);border-radius:8px;color:var(--danger);font-size:.75rem;font-weight:700;cursor:pointer">🚪 離脱</button>
-        <span id="member-count" style="font-size:.75rem;color:var(--muted)"></span>
+        <span id="member-count" style="margin-left:auto;font-size:.75rem;color:var(--muted)"></span>
       </div>
       <div id="team-member-list"><div class="empty-state">メンバーを読み込み中...</div></div>
     </div>
@@ -433,9 +465,10 @@
   <div class="card">
     <h2>👤 プロフィール</h2>
     <div class="setting-row">
-      <div><div class="setting-label">お名前</div><div class="setting-sub">チームで表示される名前</div></div>
-      <input type="text" id="user-name-input" placeholder="例：田中">
+      <div><div class="setting-label">お名前</div><div class="setting-sub">ログイン時に自動で読み込まれます</div></div>
+      <div id="user-name-display" style="font-size:.92rem;font-weight:700;color:var(--primary-dark)">-</div>
     </div>
+    <input type="hidden" id="user-name-input">
     <div class="setting-row">
       <div><div class="setting-label">目標カロリー</div><div class="setting-sub">推奨：女性1400〜1600 / 男性1800〜2000</div></div>
       <input type="number" id="goal-kcal-input" value="1600" min="800" max="4000">
@@ -457,24 +490,12 @@
     <button class="save-btn" style="margin-top:6px;background:#1565C0" onclick="testApiKey()">🔍 接続テスト</button>
     <div id="api-test-result" style="margin-top:8px;font-size:.82rem;text-align:center"></div>
   </div>
-  <div class="card">
+  <div class="card" style="display:none">
     <h2>🔗 チーム共有（Firebase）</h2>
-    <div class="firebase-notice">
-      Firebaseを設定すると全員の進捗をリアルタイム共有できます。<br>
-      ① <strong>firebase.google.com</strong> でプロジェクト作成<br>
-      ② Realtime Database を有効化（テストモード）<br>
-      ③ プロジェクト設定 → マイアプリ → SDK設定から設定コードをコピー
-    </div>
-    <div class="setting-row">
-      <div><div class="setting-label">グループコード</div><div class="setting-sub">チームで共通の合言葉（英数字）</div></div>
-      <input type="text" id="room-code-input" placeholder="例：myteam01" style="width:140px;text-align:left">
-    </div>
-    <div style="margin-top:8px">
-      <div class="setting-label" style="margin-bottom:4px">Firebase設定コード</div>
-      <textarea class="firebase-cfg" id="firebase-cfg-input" placeholder='{"apiKey":"AIza...","databaseURL":"https://xxx-default-rtdb.firebaseio.com",...}'></textarea>
-    </div>
-    <button class="save-btn" onclick="saveFirebase()" id="firebase-save-btn">🔗 Firebase接続</button>
-    <div id="firebase-status" style="margin-top:8px;font-size:.80rem;text-align:center;color:var(--muted)"></div>
+    <input type="text" id="room-code-input" style="display:none">
+    <textarea id="firebase-cfg-input" style="display:none"></textarea>
+    <button onclick="saveFirebase()" id="firebase-save-btn" style="display:none">Firebase接続</button>
+    <div id="firebase-status" style="display:none"></div>
   </div>
   <div class="card" id="member-manage-card" style="display:none">
     <h2>👥 メンバー管理</h2>
@@ -554,11 +575,24 @@
 <div class="toast" id="toast"></div>
 
 <script type="module">
+// ===== Firebase 埋め込み設定（toriez-diet 専用） =====
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAwuydtI_JvaB9eiCY2m2zCKOpKzNtcNW0",
+  authDomain: "toriez-diet.firebaseapp.com",
+  databaseURL: "https://toriez-diet-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "toriez-diet",
+  storageBucket: "toriez-diet.firebasestorage.app",
+  messagingSenderId: "791788022533",
+  appId: "1:791788022533:web:a7fc00d59f3c0020d4e56c",
+  measurementId: "G-518W14C2WE"
+};
+const ROOM_CODE = "toriez2024";
+
 const S={
-  logs:[],goal:1600,userName:'',apiKey:'',proxyUrl:'',roomCode:'',firebaseCfg:'',
+  logs:[],goal:1600,userName:'',apiKey:'',proxyUrl:'',roomCode:ROOM_CODE,firebaseCfg:JSON.stringify(FIREBASE_CONFIG),
   meal:'朝食',mealEmoji:'🌅',imgB64:null,
   walkLogs:{}, // {YYYY-MM-DD: steps}
-  db:null,teamData:{},
+  db:null,auth:null,authUser:null,teamData:{},
   editingId:null
 };
 
@@ -616,10 +650,12 @@ async function loadThumbs(){
 async function load(){
   try{
     const s=JSON.parse(localStorage.getItem('diet_v4')||localStorage.getItem('diet_v3')||'{}');
-    S.logs=s.logs||[];S.goal=s.goal||1600;S.userName=s.userName||'';
+    S.logs=s.logs||[];S.goal=s.goal||1600;
     S.apiKey=s.apiKey||'';S.proxyUrl=s.proxyUrl||'';
-    S.roomCode=s.roomCode||'';S.firebaseCfg=s.firebaseCfg||'';
     S.walkLogs=s.walkLogs||{};
+    // userName, roomCode, firebaseCfg は埋め込み/認証から取得
+    S.roomCode=ROOM_CODE;
+    S.firebaseCfg=JSON.stringify(FIREBASE_CONFIG);
   }catch(e){console.error('load error:',e);}
 
   // v3→v4マイグレーション: 既存のthumbをIndexedDBに移行
@@ -640,11 +676,8 @@ async function load(){
   }
 
   g('goal-kcal-input').value=S.goal;
-  g('user-name-input').value=S.userName;
   g('api-key-input').value=S.apiKey;
   g('proxy-url-input').value=S.proxyUrl;
-  g('room-code-input').value=S.roomCode;
-  g('firebase-cfg-input').value=S.firebaseCfg;
   updateHeader();
 }
 
@@ -671,7 +704,10 @@ function save(){
 function g(id){return document.getElementById(id)}
 function toDate(d){return`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`}
 function p2(n){return String(n).padStart(2,'0')}
-function updateHeader(){g('header-sub').textContent=S.userName?`${S.userName}さんの食事管理`:'AI食事管理アプリ'}
+function updateHeader(){
+  g('header-sub').textContent=S.userName?`${S.userName}さんの食事管理`:'AI食事管理アプリ';
+  const nd=g('user-name-display');if(nd)nd.textContent=S.userName||'-';
+}
 function toast(msg){const t=g('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800)}
 window.showToast=toast;
 
@@ -1455,7 +1491,7 @@ window.closeTeamHistoryModal=function(e){
 // ===== SETTINGS =====
 window.saveProfile=function(){
   S.goal=parseInt(g('goal-kcal-input').value)||1600;
-  S.userName=g('user-name-input').value.trim();
+  // userName は認証から取得済みなので変更しない
   save();syncFB();updateHeader();toast('✅ 保存しました');
 }
 window.saveApiKey=function(){
@@ -1535,23 +1571,87 @@ window.resetData=function(){
   S.logs=[];S.walkLogs={};save();syncFB();toast('🗑️ リセットしました');showPage('record');
 }
 
-// ===== FIREBASE =====
-async function initFB(cfgStr,room){
-  try{
-    const{initializeApp,getApps,deleteApp}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-    const{getDatabase,ref,set,onValue}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
-    const apps=getApps();if(apps.length>0){try{await deleteApp(apps[0]);}catch(e){}}
-    const cfg=JSON.parse(cfgStr);
-    if(!cfg.databaseURL)throw new Error('databaseURLが必要です');
-    const app=initializeApp(cfg);S.db=getDatabase(app);S._ref=ref;S._set=set;
-    const roomRef=ref(S.db,`rooms/${room}/members`);
-    onValue(roomRef,snap=>{S.teamData=snap.val()||{};renderTeam();renderMemberManage();});
-    g('firebase-status').textContent='✅ 接続成功！';g('firebase-status').style.color='var(--primary-dark)';
-    return true;
-  }catch(e){
-    g('firebase-status').textContent='❌ '+e.message;g('firebase-status').style.color='var(--danger)';return false;
-  }
+// ===== FIREBASE / AUTH =====
+let _fbApp=null,_authMod=null,_dbMod=null;
+
+async function initFirebaseApp(){
+  if(_fbApp)return _fbApp;
+  const fbAppMod=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+  _authMod=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+  _dbMod=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
+  const apps=fbAppMod.getApps();
+  _fbApp = apps.length ? apps[0] : fbAppMod.initializeApp(FIREBASE_CONFIG);
+  S.auth=_authMod.getAuth(_fbApp);
+  try{await _authMod.setPersistence(S.auth,_authMod.browserLocalPersistence);}catch(e){console.warn('persistence:',e);}
+  S.db=_dbMod.getDatabase(_fbApp);
+  S._ref=_dbMod.ref;S._set=_dbMod.set;
+  return _fbApp;
 }
+
+async function setupAuthListener(){
+  await initFirebaseApp();
+  _authMod.onAuthStateChanged(S.auth, async (user)=>{
+    if(user){
+      S.authUser=user;
+      try{
+        const snap=await _dbMod.get(_dbMod.ref(S.db,'members/'+user.uid));
+        const m=snap.val();
+        if(!m){
+          showLoginError('このアカウントはメンバーに登録されていません。管理者に連絡してください。');
+          await _authMod.signOut(S.auth);
+          return;
+        }
+        const name=(typeof m==='object' && m && m.name) ? m.name : (typeof m==='string' ? m : (user.email||'メンバー'));
+        S.userName=name;
+        save();updateHeader();
+        const roomRef=_dbMod.ref(S.db,'rooms/'+ROOM_CODE+'/members');
+        _dbMod.onValue(roomRef,sn=>{S.teamData=sn.val()||{};renderTeam();renderMemberManage();});
+        syncFB();
+        hideLoginOverlay();
+      }catch(e){
+        console.error('member lookup:',e);
+        showLoginError('メンバー情報の取得に失敗しました：'+(e&&e.message||e));
+        try{await _authMod.signOut(S.auth);}catch(_){}
+      }
+    }else{
+      S.authUser=null;
+      showLoginOverlay();
+    }
+  });
+}
+
+function showLoginOverlay(){const o=g('login-overlay');if(o)o.classList.remove('hidden');}
+function hideLoginOverlay(){const o=g('login-overlay');if(o)o.classList.add('hidden');}
+function showLoginError(msg){const e=g('login-error');if(e)e.textContent=msg||'';}
+
+window.doLogin=async function(ev){
+  if(ev)ev.preventDefault();
+  const email=g('login-email').value.trim();
+  const pw=g('login-password').value;
+  if(!email||!pw){showLoginError('メールアドレスとパスワードを入力してください');return false;}
+  showLoginError('');
+  const btn=g('login-btn');if(btn){btn.disabled=true;btn.textContent='ログイン中...';}
+  try{
+    await initFirebaseApp();
+    await _authMod.signInWithEmailAndPassword(S.auth,email,pw);
+    g('login-password').value='';
+  }catch(e){
+    let msg='ログインに失敗しました';
+    const code=(e&&e.code)||'';
+    if(code.indexOf('invalid-email')>=0)msg='メールアドレスの形式が正しくありません';
+    else if(code.indexOf('user-not-found')>=0||code.indexOf('invalid-credential')>=0||code.indexOf('wrong-password')>=0)msg='メールアドレスまたはパスワードが間違っています';
+    else if(code.indexOf('too-many-requests')>=0)msg='試行回数が多すぎます。しばらく待ってから再度お試しください';
+    else if(code.indexOf('network')>=0)msg='ネットワークエラー。接続を確認してください';
+    else if(e&&e.message)msg=msg+'：'+e.message;
+    showLoginError(msg);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='ログイン';}
+  }
+  return false;
+}
+
+// 旧APIのスタブ（呼び出し箇所が残っている場合に動作させる）
+async function initFB(cfgStr,room){try{await initFirebaseApp();return true;}catch(e){console.error(e);return false;}}
 async function syncFB(){
   if(!S.db||!S.roomCode||!S.userName)return;
   try{
@@ -1594,9 +1694,11 @@ document.addEventListener('touchend',function(e){
   await load();
   initRecordDate();
   initWalkDate();
-  if(S.firebaseCfg&&S.roomCode&&S.userName){
-    const ok=await initFB(S.firebaseCfg,S.roomCode);
-    if(ok)syncFB();
+  try{
+    await setupAuthListener();
+  }catch(e){
+    console.error('auth init failed:',e);
+    showLoginError('初期化に失敗しました：'+(e&&e.message||e));
   }
 })();
 </script>
